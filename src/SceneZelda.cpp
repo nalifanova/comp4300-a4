@@ -1,6 +1,7 @@
 #include "SceneZelda.hpp"
 
 #include <fstream>
+#include <imgui_internal.h>
 #include <iostream>
 
 #include "imgui.h"
@@ -10,6 +11,45 @@
 #include "GameEngine.hpp"
 #include "Physics.hpp"
 #include "SceneMenu.hpp"
+
+void guiShowTable(const std::vector<std::shared_ptr<Entity>>& entities, bool showHeader = true)
+{
+    if (ImGui::BeginTable("Table", 5))
+    {
+        ImGui::TableSetupColumn("Img", ImGuiTableColumnFlags_WidthFixed, 40.0f);
+        ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed, 30.0f);
+        ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 50.0f);
+        ImGui::TableSetupColumn("Name");
+        ImGui::TableSetupColumn("Position");
+
+        if (showHeader) { ImGui::TableHeadersRow(); }
+
+        for (auto & e : entities)
+        {
+            auto& anim = e->get<CAnimation>().animation;
+            auto& pos = e->get<CTransform>().pos;
+
+            ImGui::TableNextRow(0, 32.0f);
+
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Image(anim.getSprite(), sf::Vector2f(anim.getSize().x / 2.5f, anim.getSize().y / 2.5f));
+
+            ImGui::TableSetColumnIndex(1);
+            ImGui::Text("%d", static_cast<int>(e->id()));
+
+            ImGui::TableSetColumnIndex(2);
+            ImGui::Text("%s", e->tag().c_str());
+
+            ImGui::TableSetColumnIndex(3);
+            ImGui::Text("%s", anim.getName().c_str());
+
+            ImGui::TableSetColumnIndex(4);
+            ImGui::Text("(%d, %d)", static_cast<int>(pos.x), static_cast<int>(pos.y));
+        }
+
+        ImGui::EndTable();
+    }
+}
 
 SceneZelda::SceneZelda(GameEngine* game, std::string& levelPath) :
     Scene(game), m_levelPath(levelPath)
@@ -48,7 +88,6 @@ void SceneZelda::onEnd()
 
 void SceneZelda::sDoAction(const Action& action)
 {
-    assert(player() != nullptr);
     auto& input = player()->get<CInput>();
     // TODO:
     // Implement all actions described for the game here
@@ -326,11 +365,72 @@ void SceneZelda::loadLevel(const std::string& fileName)
     // TODO:
     // Load the level file and put all entities in the manager
     // Use the getPosition() function below to convert room-tile coords to game world coords
+    auto& path = fileName; // should think of a path
 
-    spawnPlayer();
+    std::ifstream file(path);
+    if (!file)
+    {
+        std::cerr << "Could not load " << path << " file!\n";
+        exit(-1);
+    }
+
+    std::string token; // player, tile, npc
+    std::string name;
+    while (file >> token)
+    {
+        if (token == "Tile")
+        {
+            int rx, ry, tx, ty, bm, bv;
+            file >> name >> rx >> ry >> tx >> ty >> bm >> bv;
+            auto tile = m_entityManager.addEntity(token);
+            tile->add<CAnimation>(m_game->assets().getAnimation(name), true);
+            tile->add<CTransform>(getPosition(rx, ry, tx, ty));
+            tile->add<CBoundingBox>(tile->get<CAnimation>().animation.getSize(), bm, bv);
+            tile->add<CDraggable>();
+        }
+        else if (token == "NPC")
+        {
+            std::string aiType;
+            int rx, ry, tx, ty, bm, bv, health, damage;
+            float speed;
+            file >> name >> rx >> ry >> tx >> ty >> bm >> bv >> health >> damage >> aiType >> speed;
+
+            auto npc = m_entityManager.addEntity(token);
+            npc->add<CAnimation>(m_game->assets().getAnimation(name), true);
+            npc->add<CTransform>(getPosition(rx, ry, tx, ty));
+            npc->add<CBoundingBox>(npc->get<CAnimation>().animation.getSize(), bm, bv);
+            npc->add<CDraggable>();
+            npc->add<CHealth>(health, health);
+            npc->add<CDamage>(damage);
+
+            if (aiType == "Follow")
+            {
+                npc->add<CFollowPlayer>(npc->get<CTransform>().pos, speed);
+            }
+            else if (aiType == "Patrol")
+            {
+                int n, posX, posY;
+                std::vector<Vec2> patrolNodes{};
+                file >> n;
+                // Could be N positions with coords posX, posY
+                for (size_t i = 0; i < n; i++)
+                {
+                    file >> posX >> posY;
+                    patrolNodes.emplace_back(posX, posY);
+                }
+                npc->add<CPatrol>(patrolNodes, speed);
+            }
+        }
+        else if (token == "Player")
+        {
+            file >> m_playerConfig.x >> m_playerConfig.y >> m_playerConfig.cX >> m_playerConfig.cY
+                >> m_playerConfig.speed >> m_playerConfig.health;
+            spawnPlayer();
+        }
+    }
 }
 
-Vec2 SceneZelda::getPosition(int rx, int ry, int tx, int ty) const
+Vec2 SceneZelda::getPosition(const int rx, const int ry, const int tx, const int ty) const
 {
     // TODO:
     // Implement this function, which takes in the room (rx, ry) coordinate
@@ -343,24 +443,20 @@ Vec2 SceneZelda::getPosition(int rx, int ry, int tx, int ty) const
     const auto tileY = static_cast<float>(ty);
 
     return {
-        roomX * width() + tileX * m_gridSize.x - m_gridSize.x / 2.0f,
-        roomY * height() + tileY * m_gridSize.y - m_gridSize.y / 2.0f,
+        roomX * width() + tileX * m_gridSize.x - m_gridSize.x / 2.0f
+      , roomY * height() + tileY * m_gridSize.y - m_gridSize.y / 2.0f,
     };
 }
 
 void SceneZelda::spawnPlayer()
 {
-    auto p = m_entityManager.addEntity("player");
-    p->add<CTransform>(Vec2(640, 480));
+    auto p = m_entityManager.addEntity("Player");
+    p->add<CTransform>(Vec2(m_playerConfig.x, m_playerConfig.y));
     p->add<CAnimation>(m_game->assets().getAnimation("LinkStandDown"), true);
-    p->add<CBoundingBox>(Vec2(48, 48), true, false);
+    p->add<CBoundingBox>(Vec2(m_playerConfig.cX, m_playerConfig.cY), true, false);
     p->add<CDraggable>(); // to test draggable
-    p->add<CHealth>(7, 3);
-    p->add<CState>("stand_down");
-
-    // TODO:
-    // Implement this function so that it uses the parameters input from the level file
-    // Those parameters should be stored in the m_playerConfig variable
+    p->add<CHealth>(m_playerConfig.health, m_playerConfig.health);
+    p->add<CState>("standDown");
 }
 
 void SceneZelda::spawnSword(std::shared_ptr<Entity> entity)
@@ -377,7 +473,7 @@ void SceneZelda::spawnSword(std::shared_ptr<Entity> entity)
 
 std::shared_ptr<Entity> SceneZelda::player()
 {
-    for (auto e: m_entityManager.getEntities("player"))
+    for (auto e: m_entityManager.getEntities("Player"))
     {
         return e;
     }
@@ -496,11 +592,11 @@ void SceneZelda::sCollision()
 
 void SceneZelda::sGUI()
 {
+    // ImGui::ShowDemoWindow();
     ImGui::Begin("Scene Properties");
 
     if (ImGui::BeginTabBar("MyTabBar"))
     {
-
         if (ImGui::BeginTabItem("Debug"))
         {
             ImGui::Checkbox("Draw Grid (G)", &m_drawGrid);
@@ -521,12 +617,28 @@ void SceneZelda::sGUI()
 
         if (ImGui::BeginTabItem("Entity Manager"))
         {
-            // TODO:
-            ImGui::Text("Do this too");
+            if (ImGui::TreeNode("Entities by Tag"))
+            {
+                for (auto& [tag, entityVector]: m_entityManager.getEntityMap())
+                {
+                    const bool showHeader = (tag != "Player");
+                    if (ImGui::CollapsingHeader(tag.c_str()))
+                    {
+                        guiShowTable(entityVector, showHeader);
+                    }
+                }
+                ImGui::TreePop();
+            }
+
+            if (ImGui::TreeNode("All Entities"))
+            {
+                guiShowTable(m_entityManager.getEntities());
+
+                ImGui::TreePop();
+            }
 
             ImGui::EndTabItem();
         }
-
         ImGui::EndTabBar();
     }
     ImGui::End();

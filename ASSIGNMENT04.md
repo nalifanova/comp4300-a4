@@ -269,15 +269,15 @@ You can use all of your collision code from Assignment 3 in this assignment.
 
 I recommend approaching this assignment in the following order:
 
-[0] Implement the GUI whenever you feel you'd like to have it for debugging
+[0] Implement the GUI whenever you feel you'd like to have it for debugging ⛌
 1. Implement WASD movement for the player such that it moves u/l/d/r when
    those keys are pressed. This will allow you to test rectangular collisions
-   as soon as possible
+   as soon as possible ✓
 2. Implement Scene_Zelda::loadLevel(), which will allow you to load the assets
    for the level given to you to test the rest of the assignment. To do this,
-   you will need to implement getPosition()
+   you will need to implement getPosition() ✓
 3. Implement spawnPlayer() so that it correctly uses the configuration
-   specified by the level file, so you can start testing collisions
+   specified by the level file, so you can start testing collisions ✓
 4. Implement the camera changes described above
 5. Implement spawnSword() so that it spawns a sword in the correct position
    with the correct lifespan
@@ -285,9 +285,9 @@ I recommend approaching this assignment in the following order:
 7. Implement player animation to correctly animate based on player state
 8. Implement NPC Patrol behavior
    Implement NPC Follow behavior without vision
-9. Implement Physics::LineIntersect() which will allow you to test whether or
+9. Implement Physics::lineIntersect() which will allow you to test whether or
    not two line segments AB and CD intersect, and where they intersect
-10. Implement Physics::EntityIntersect() which will allow you to test whether
+10. Implement Physics::entityIntersect() which will allow you to test whether
     line segment AB intersects with any lines of the bounding box of Entity
 11. Implement NPC Follow behavior using 10 to check line of sight
 12. Implement invincibility frames
