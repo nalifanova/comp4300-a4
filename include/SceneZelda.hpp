@@ -7,8 +7,8 @@ class SceneZelda: public Scene
 {
     struct PlayerConfig
     {
-        float X, Y, CX, CY, SPEED, HEALTH;
-        std::string WEAPON;
+        float x, y, cX, cY, speed, health;
+        std::string weapon;
     };
 
 public:
@@ -29,6 +29,7 @@ protected:
     void spawnSword(std::shared_ptr<Entity> entity);
     std::shared_ptr<Entity> player();
 
+    void sDrag();
     void sMovement();
     void sAI();
     void sStatus();
@@ -39,12 +40,13 @@ protected:
 
     // void changePlayerStateTo(std::string s);
     // void changePlayerStateTo(const std::string& state, const Vec2& facing);
-    // Vec2 windowToWorld(const Vec2& pos);
-    Vec2 getRoomXY(const Vec2& pos);
+    Vec2 windowToWorld(const Vec2& mousePosition) const;
+    Vec2 getRoomXY(const Vec2& pos) const;
 
     PlayerConfig m_playerConfig{};
     sf::Text m_gridText;
     const Vec2 m_gridSize = {64, 64};
+    Vec2 m_mousePos;
 
     std::string m_levelPath;
     bool m_drawCollision = false;

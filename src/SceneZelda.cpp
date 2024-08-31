@@ -1,13 +1,15 @@
 #include "SceneZelda.hpp"
 
 #include <fstream>
-#include <string>
+#include <iostream>
 
 #include "imgui.h"
 #include "imgui-SFML.h"
 
 #include "Components.hpp"
 #include "GameEngine.hpp"
+#include "Physics.hpp"
+#include "SceneMenu.hpp"
 
 SceneZelda::SceneZelda(GameEngine* game, std::string& levelPath) :
     Scene(game), m_levelPath(levelPath)
@@ -19,44 +21,44 @@ void SceneZelda::update()
 {
     m_entityManager.update();
 
-    // TODO:
-    // Implement pause functionality
-
-    // sDrag();
-    sAI();
-    sMovement();
-    sStatus();
-    sCollision();
-    sAnimation();
-    sCamera();
-    sGUI();
+    sDrag();
+    if (!m_paused)
+    {
+        sAI();
+        sMovement();
+        sStatus();
+        sCollision();
+        sAnimation();
+        sCamera();
+        sGUI();
+        m_currentFrame++;
+    }
     sRender();
-
-    m_currentFrame++;
 }
 
 // protected
-
 void SceneZelda::onEnd()
 {
     // TODO
     // When the scene ends, change back to the MENU scene
     // Stop the music
     // Play the menu music
-    // Use m_game->changeScene(correct params);
+    m_game->changeScene("Menu", std::make_shared<SceneMenu>(m_game));
 }
 
 void SceneZelda::sDoAction(const Action& action)
 {
+    assert(player() != nullptr);
+    auto& input = player()->get<CInput>();
     // TODO:
     // Implement all actions described for the game here
     // Only the setting of the player's input component variables should be set here
     // Do minimal logic in this function
 
-    // if (action.name() == "MOUSE_MOVE")
-    // {
-    //     m_mousePos = action.pos();
-    // }
+    if (action.name() == "MOUSE_MOVE")
+    {
+        m_mousePos = action.pos();
+    }
 
     if (action.type() == "START")
     {
@@ -65,24 +67,37 @@ void SceneZelda::sDoAction(const Action& action)
         else if (action.name() == "TOGGLE_FOLLOW") { m_follow = !m_follow; }
         else if (action.name() == "TOGGLE_TEXTURE") { m_drawTextures = !m_drawTextures; }
         else if (action.name() == "TOGGLE_COLLISION") { m_drawCollision = !m_drawCollision; }
-        else
-            if (action.name() == "TOGGLE_GRID") { m_drawGrid = !m_drawGrid; }
-        // else if (action.name() == "LEFT_CLICK")
-        // {
-        //     Vec2 wPos = windowToWorld(m_mousePos);
-        //     for (auto& e: m_entityManager.getEntities())
-        //     {
-        //         if (!e->has<CDraggable>()) { continue; }
-        //
-        //         if (Physics::isInside(wPos, e))
-        //         {
-        //             e->get<CDraggable>().dragging = !e->get<CDraggable>().dragging;
-        //         }
-        //     }
-        // }
+        else if (action.name() == "TOGGLE_GRID") { m_drawGrid = !m_drawGrid; }
+
+        else if (action.name() == "UP") { input.up = true; }
+        else if (action.name() == "DOWN") { input.down = true; }
+        else if (action.name() == "LEFT") { input.left = true; }
+        else if (action.name() == "RIGHT") { input.right = true; }
+        else if (action.name() == "ATTACK") { input.attack = true; }
+
+        else if (action.name() == "LEFT_CLICK")
+        {
+            const Vec2 wPos = windowToWorld(m_mousePos);
+            for (auto& e: m_entityManager.getEntities())
+            {
+                if (!e->has<CDraggable>()) { continue; }
+
+                if (Physics::isInside(wPos, e))
+                {
+                    e->get<CDraggable>().dragging = !e->get<CDraggable>().dragging;
+                }
+            }
+        }
     }
-    else
-        if (action.type() == "END") {}
+    else if (action.type() == "END")
+    {
+        if (action.name() == "UP") { input.up = false; }
+        else if (action.name() == "DOWN") { input.down = false; }
+        else if (action.name() == "LEFT") { input.left = false; }
+        else if (action.name() == "RIGHT") { input.right = false; }
+        else
+            if (action.name() == "ATTACK") { input.attack = false; }
+    }
 }
 
 void SceneZelda::sRender()
@@ -297,7 +312,11 @@ void SceneZelda::init(const std::string& levelPath)
     registerAction(sf::Keyboard::C, "TOGGLE_COLLISION"); // toggle drawing (C)ollision Box
     registerAction(sf::Keyboard::G, "TOGGLE_GRID"); // toggle drawing (G)rid
 
-    // TODO: Register the actions required to play the game
+    registerAction(sf::Keyboard::W, "UP");
+    registerAction(sf::Keyboard::S, "DOWN");
+    registerAction(sf::Keyboard::A, "LEFT");
+    registerAction(sf::Keyboard::D, "RIGHT");
+    registerAction(sf::Keyboard::Space, "ATTACK");
 }
 
 void SceneZelda::loadLevel(const std::string& fileName)
@@ -317,8 +336,16 @@ Vec2 SceneZelda::getPosition(int rx, int ry, int tx, int ty) const
     // Implement this function, which takes in the room (rx, ry) coordinate
     // as well as the tile (tx, ty) coordinate, and return the Vec2 game world
     // position of the center of the entity
+    // e.g. room + gridX - m_gridSize.x / 2.0f
+    const auto roomX = static_cast<float>(rx);
+    const auto roomY = static_cast<float>(ry);
+    const auto tileX = static_cast<float>(tx);
+    const auto tileY = static_cast<float>(ty);
 
-    return Vec2(0, 0);
+    return {
+        roomX * width() + tileX * m_gridSize.x - m_gridSize.x / 2.0f,
+        roomY * height() + tileY * m_gridSize.y - m_gridSize.y / 2.0f,
+    };
 }
 
 void SceneZelda::spawnPlayer()
@@ -327,8 +354,9 @@ void SceneZelda::spawnPlayer()
     p->add<CTransform>(Vec2(640, 480));
     p->add<CAnimation>(m_game->assets().getAnimation("LinkStandDown"), true);
     p->add<CBoundingBox>(Vec2(48, 48), true, false);
-    // p->add<CDraggable>(); // just to test draggable
+    p->add<CDraggable>(); // to test draggable
     p->add<CHealth>(7, 3);
+    p->add<CState>("stand_down");
 
     // TODO:
     // Implement this function so that it uses the parameters input from the level file
@@ -356,11 +384,59 @@ std::shared_ptr<Entity> SceneZelda::player()
     return nullptr;
 }
 
+void SceneZelda::sDrag()
+{
+    for (const auto& e: m_entityManager.getEntities())
+    {
+        if (e->has<CDraggable>() && e->get<CDraggable>().dragging)
+        {
+            const Vec2 wPos = windowToWorld(m_mousePos);
+            e->get<CTransform>().pos = wPos;
+        }
+    }
+}
+
 void SceneZelda::sMovement()
 {
-    // TODO:
-    // Implement all player movement functionality here based on
-    // the player's input component variables
+    assert(player() != nullptr);
+
+    auto& input = player()->get<CInput>();
+    auto& state = player()->get<CState>();
+
+    Vec2 playerVelocity(0, 0);
+    m_playerConfig.speed = 5;
+
+    if (input.up)
+    {
+        state.state = "standUp";
+        playerVelocity.y = -m_playerConfig.speed;
+    }
+    else if (input.down)
+    {
+        state.state = "standDown";
+        playerVelocity.y = m_playerConfig.speed;
+    }
+    else if (input.right)
+    {
+        state.state = "standRight";
+        playerVelocity.x = m_playerConfig.speed;
+    }
+    else if (input.left)
+    {
+        state.state = "standReft"; // flipped
+        playerVelocity.x = -m_playerConfig.speed;
+    }
+    else
+    {
+        state.state = "standUp";
+    }
+    player()->get<CTransform>().velocity = playerVelocity;
+
+    for (const auto& el: m_entityManager.getEntities())
+    {
+        auto& t = el->get<CTransform>();
+        t.pos += t.velocity;
+    }
 }
 
 void SceneZelda::sAI()
@@ -456,14 +532,20 @@ void SceneZelda::sGUI()
     ImGui::End();
 }
 
-Vec2 SceneZelda::getRoomXY(const Vec2& pos)
+Vec2 SceneZelda::windowToWorld(const Vec2& mousePosition) const
+{
+    // For a non-moving up/down window this solution is okay
+    auto view = m_game->window().getView();
+    float wx = view.getCenter().x - (m_game->window().getSize().x / 2.0f);
+    return {mousePosition.x + wx, mousePosition.y};
+}
+
+Vec2 SceneZelda::getRoomXY(const Vec2& pos) const
 {
     auto winSize = m_game->window().getSize();
     int roomX = static_cast<int>(pos.x) / static_cast<int>(winSize.x);
     int roomY = static_cast<int>(pos.y) / static_cast<int>(winSize.y);
-    if (pos.x < 0)
-        roomX--;
-    if (pos.y < 0)
-        roomY--;
-    return {(float)roomX, (float)roomY};
+    if (pos.x < 0) { roomX--; }
+    if (pos.y < 0) { roomY--; }
+    return {static_cast<float>(roomX), static_cast<float>(roomY)};
 }

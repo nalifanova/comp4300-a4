@@ -10,6 +10,14 @@ public:
     bool has = false;
 };
 
+class CDraggable: public Component
+{
+public:
+    CDraggable() = default;
+
+    bool dragging = false;
+};
+
 class CTransform: public Component
 {
 public:
@@ -124,7 +132,7 @@ public:
     explicit CState(std::string s) :
         state(std::move(s)) {}
 
-    std::string state = "stand";
+    std::string state = "standUp";
 };
 
 class CFollowPlayer: public Component

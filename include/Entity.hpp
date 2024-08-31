@@ -12,6 +12,7 @@ typedef std::tuple<
     CAnimation,
     CBoundingBox,
     CDamage,
+    CDraggable,
     CFollowPlayer,
     CTransform,
     CHealth,
