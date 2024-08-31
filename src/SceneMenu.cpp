@@ -7,13 +7,11 @@
 #include "GameEngine.hpp"
 #include "SceneZelda.hpp"
 
-
 SceneMenu::SceneMenu(GameEngine* gameEngine) :
     Scene(gameEngine)
 {
     init();
 }
-
 
 void SceneMenu::sRender()
 {
@@ -36,8 +34,9 @@ void SceneMenu::sRender()
         }
 
         m_menuItems[i].setPosition(
-            float(m_game->window().getSize().x) / 2.0f - float(26 * (m_menuStrings[i].length() + 1)) / 2.0f,
-            m_menuText.getGlobalBounds().top + 10.0f + 30.0f * float(i + 1)
+            static_cast<float>((m_game->window().getSize().x)) / 2.0f -
+            static_cast<float>((26 * (m_menuStrings[i].length() + 1))) / 2.0f,
+            m_menuText.getGlobalBounds().top + 10.0f + 30.0f * static_cast<float>((i + 1))
             );
         m_game->window().draw(m_menuItems[i]);
     }
@@ -46,8 +45,9 @@ void SceneMenu::sRender()
     sf::Text help("W:UP  S:DOWN  D:PLAY  M:MUTE  ESC:BACK/QUIT", m_game->assets().getFont("Mario"), 26);
     help.setFillColor(sf::Color::Black);
     help.setPosition(
-        float(m_game->window().getSize().x) / 2.0f - float(26 * (help.getString().getSize() + 1)) / 2.0f,
-        float(m_game->window().getSize().y) - 30.0f * 2.0f
+        static_cast<float>((m_game->window().getSize().x)) / 2.0f -
+        static_cast<float>((26 * (help.getString().getSize() + 1))) / 2.0f,
+        static_cast<float>((m_game->window().getSize().y)) - 30.0f * 2.0f
         );
     m_game->window().draw(help);
 }
@@ -68,8 +68,9 @@ void SceneMenu::init()
     registerAction(sf::Keyboard::M, "MUTE");
     registerAction(sf::Keyboard::Escape, "QUIT");
 
-    m_titleMusic = m_game->assets().getSound("STitleTheme");
-    m_titleMusic.play();
+    // TODO: don't unmute until the end of development
+    // m_titleMusic = m_game->assets().getSound("STitleTheme");
+    // m_titleMusic.play();
 
     m_title = "Lunatics";
     int titleSize = 30;
@@ -79,8 +80,9 @@ void SceneMenu::init()
     m_menuText.setCharacterSize(titleSize);
     m_menuText.setFillColor(sf::Color::Black);
     m_menuText.setPosition(
-        float(m_game->window().getSize().x) / 2.0f - float(titleSize * (m_title.length() + 1)) / 2.0f,
-        float(titleSize * 3)
+        static_cast<float>((m_game->window().getSize().x)) / 2.0f
+        - static_cast<float>((titleSize * (m_title.length() + 1))) / 2.0f,
+        static_cast<float>((titleSize * 3))
         );
 
     m_menuStrings.emplace_back("LEVEL 1");
@@ -95,8 +97,9 @@ void SceneMenu::init()
             text.setFillColor(sf::Color::Black);
         }
         text.setPosition(
-            float(m_game->window().getSize().x) / 2.0f - float(26 * (m_menuStrings[i].length() + 1)) / 2.0f,
-            m_menuText.getGlobalBounds().top + 10.0f + 30.0f * float(i + 1)
+            static_cast<float>((m_game->window().getSize().x)) / 2.0f
+            - static_cast<float>((26 * (m_menuStrings[i].length() + 1))) / 2.0f,
+            m_menuText.getGlobalBounds().top + 10.0f + 30.0f * static_cast<float>((i + 1))
             );
         m_menuItems.push_back(text);
     }
