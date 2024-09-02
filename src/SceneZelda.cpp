@@ -362,9 +362,6 @@ void SceneZelda::loadLevel(const std::string& fileName)
 {
     m_entityManager = EntityManager();
 
-    // TODO:
-    // Load the level file and put all entities in the manager
-    // Use the getPosition() function below to convert room-tile coords to game world coords
     auto& path = fileName; // should think of a path
 
     std::ifstream file(path);
@@ -432,11 +429,6 @@ void SceneZelda::loadLevel(const std::string& fileName)
 
 Vec2 SceneZelda::getPosition(const int rx, const int ry, const int tx, const int ty) const
 {
-    // TODO:
-    // Implement this function, which takes in the room (rx, ry) coordinate
-    // as well as the tile (tx, ty) coordinate, and return the Vec2 game world
-    // position of the center of the entity
-    // e.g. room + gridX - m_gridSize.x / 2.0f
     const auto roomX = static_cast<float>(rx);
     const auto roomY = static_cast<float>(ry);
     const auto tileX = static_cast<float>(tx);
@@ -498,6 +490,7 @@ void SceneZelda::sMovement()
 
     auto& input = player()->get<CInput>();
     auto& state = player()->get<CState>();
+    auto& transf = player()->get<CTransform>();
 
     Vec2 playerVelocity(0, 0);
     m_playerConfig.speed = 5;
@@ -506,26 +499,51 @@ void SceneZelda::sMovement()
     {
         state.state = "standUp";
         playerVelocity.y = -m_playerConfig.speed;
+        state.prevState = state.state;
     }
     else if (input.down)
     {
         state.state = "standDown";
         playerVelocity.y = m_playerConfig.speed;
+        state.prevState = state.state;
     }
     else if (input.right)
     {
         state.state = "standRight";
         playerVelocity.x = m_playerConfig.speed;
+        if (transf.scale.x < 0) { transf.scale.x = 1; } // flipping to the right direction
+        state.prevState = state.state;
     }
     else if (input.left)
     {
-        state.state = "standReft"; // flipped
+        state.state = "standLeft"; // flipped
         playerVelocity.x = -m_playerConfig.speed;
+        if (transf.scale.x > 0) { transf.scale.x = -1; } // flipping to the left direction
+        state.prevState = state.state;
+    }
+    else if (input.attack)
+    {
+        if (state.state == "standUp")
+        {
+            state.state = "atkUp";
+            state.prevState = "standUp";
+        }
+        else if (state.state == "standDown")
+        {
+            state.state = "atkDown";
+            state.prevState = "standDown";
+        }
+        else if (state.state == "standLeft" || state.state == "standRight")
+        {
+            state.state = "atkRight";
+            state.prevState = "standLeft";
+        }
     }
     else
     {
-        state.state = "standUp";
+        state.state = state.prevState;
     }
+
     player()->get<CTransform>().velocity = playerVelocity;
 
     for (const auto& el: m_entityManager.getEntities())
@@ -556,6 +574,41 @@ void SceneZelda::sAnimation()
     // Implement sword animation based on player facing
     // The sword should move if the player changes direction mid swing
     // Implement destruction of entities with non-repeating finished animations
+    auto p = player();
+    auto& state = p->get<CState>().state;
+
+    std::map<std::string, std::string> states = {
+        {"atkDown", "LinkAtkDown"},
+        {"atkLeft", "LinkAtkRight"},
+        {"atkRight", "LinkAtkRight"},
+        {"atkUp", "LinkAtkUp"},
+        {"moveDown", "LinkMoveDown"},
+        {"moveLeft", "LinkMoveRight"},
+        {"moveRight", "LinkMoveRight"},
+        {"moveUp", "LinkMoveUp"},
+        {"standDown", "LinkStandDown"},
+        {"standLeft", "LinkStandRight"},
+        {"standRight", "LinkStandRight"},
+        {"standUp", "LinkStandUp"},
+    };
+    for (const auto& [s, animation]: states)
+    {
+        if (state == s)
+        {
+            p->add<CAnimation>(m_game->assets().getAnimation(animation), true);
+        }
+    }
+
+    // Animate entities
+    for (auto& e: m_entityManager.getEntities())
+    {
+        if (!e->has<CAnimation>()) { continue; }
+
+        if (e->get<CAnimation>().animation.hasEnded() && !e->get<CAnimation>().repeat) {
+            e->destroy();
+        }
+        e->get<CAnimation>().animation.update();
+    }
 }
 
 void SceneZelda::sCamera()
