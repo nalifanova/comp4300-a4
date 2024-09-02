@@ -33,7 +33,12 @@ void Animation::update()
     // 1) calculate the correct frame of animation to play based on currentFrame and speed
     // 2) set the texture rectangle properly (see constructor for sample)
     size_t animationFrame = (m_currentFrame / m_speed) % m_frameCount;
-    m_sprite.setTextureRect(sf::IntRect(int(animationFrame) * int(m_size.x), 0, int(m_size.x), int(m_size.y)));
+    m_sprite.setTextureRect(sf::IntRect(
+        int(animationFrame) * int(m_size.x),
+        0,
+        int(m_size.x),
+        int(m_size.y))
+        );
 }
 
 bool Animation::hasEnded() const

@@ -133,6 +133,7 @@ public:
         state(std::move(s)) {}
 
     std::string state = "standUp";
+    std::string prevState = "standUp";
 };
 
 class CFollowPlayer: public Component
