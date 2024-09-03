@@ -32,7 +32,7 @@ void guiShowTable(const std::vector<std::shared_ptr<Entity>>& entities, bool sho
             ImGui::TableNextRow(0, 32.0f);
 
             ImGui::TableSetColumnIndex(0);
-            ImGui::Image(anim.getSprite(), sf::Vector2f(anim.getSize().x / 2.5f, anim.getSize().y / 2.5f));
+            ImGui::Image(anim.getSprite(), sf::Vector2f(30.0f, 30.0f));
 
             ImGui::TableSetColumnIndex(1);
             ImGui::Text("%d", static_cast<int>(e->id()));
@@ -49,6 +49,16 @@ void guiShowTable(const std::vector<std::shared_ptr<Entity>>& entities, bool sho
 
         ImGui::EndTable();
     }
+}
+
+void createEntity(std::shared_ptr<Entity>& entity)
+{
+    // entity->addComponent<CAnimation>(m_game->assets().getAnimation(tile.name), true);
+    // entity->addComponent<CTransform>(gridToMidPixel(tile.x * m_gridSize.x, tile.y * m_gridSize.y, entity));
+    //
+    // const auto& anim = entity->getComponent<CAnimation>().animation;
+    // auto& transf = entity->getComponent<CTransform>();
+
 }
 
 SceneZelda::SceneZelda(GameEngine* game, std::string& levelPath) :
@@ -630,22 +640,21 @@ void SceneZelda::sAnimation()
 
 void SceneZelda::sCamera()
 {
-    // TODO:
-    // Implement camera view logic
-
-    // get the current view, which we will modify in the if-statement below
+    assert(player() != nullptr);
+    auto position = player()->get<CTransform>().pos;
     sf::View view = m_game->window().getView();
 
     if (m_follow)
     {
         // calculate view for player follow camera
+        view.setCenter(position.x, position.y);
     }
     else
     {
         // calculate view for room-based camera
+        Vec2 room = getRoomXY(position);
+        view.setCenter(room.x * width() + width() / 2.0f, room.y * height() + height() / 2.0f);
     }
-
-    // then set the window view
     m_game->window().setView(view);
 }
 
@@ -677,11 +686,60 @@ void SceneZelda::sGUI()
             ImGui::EndTabItem();
         }
 
+        if (ImGui::BeginTabItem("Sounds"))
+        {
+            for (auto& [name, sound]: m_game->assets().getSounds())
+            {
+                ImGui::PushID(name.c_str()); // bind id with a unique identifier which is a name
+                if (ImGui::Button("Play")) { sound.play(); }
+                ImGui::PopID(); // unbind an id
+                ImGui::SameLine();
+
+                ImGui::PushID(name.c_str());
+                if (ImGui::Button("Stop")) { sound.stop(); }
+                ImGui::PopID();
+                ImGui::SameLine();
+
+                ImGui::Text("%s", name.c_str()); // Sounds name
+            }
+
+            ImGui::EndTabItem();
+        }
+
         if (ImGui::BeginTabItem("Animations"))
         {
-            // TODO:
-            ImGui::Text("Do this");
+            size_t counter = 0;
+            const auto windowSize = ImGui::GetWindowSize().x;
+            const int tilesNumber = static_cast<int>(windowSize / (m_gridSize.x + 10));
 
+            for (auto& [tag, anim]: m_game->assets().getAnimations())
+            {
+                if (tag.find("Link") != std::string::npos ) { continue; } // No player pics
+
+                if (counter++ % tilesNumber != 0) { ImGui::SameLine(); } // tilesNumber columns
+
+                bool isNpc = tag.find("Stand") != std::string::npos;
+                const sf::Texture* animTex = anim.getSprite().getTexture();
+                ImVec2 uv0(0.0f, 0.0f);   // Beginning of texture
+                ImVec2 uv1(1.0f, 1.0f);  // Center of texture
+                int padding = 1;
+                const auto& bgColor = isNpc
+                    ? ImVec4(255, 128, 128, 20) // Not available
+                    : ImVec4(0, 0, 0, 0); // available
+
+                if (isNpc) { uv1.x = 0.5f; } // multiple imgs
+
+                ImVec2 size(m_gridSize.x - 10.0f,  m_gridSize.y - 10.0f);
+
+                if (ImGui::ImageButton(
+                    reinterpret_cast<void*>(animTex->getNativeHandle()),
+                    size, uv0, uv1, padding, bgColor))
+                {
+                    std::cout << "Let's create " << anim.getName() << "\n"; // TODO:
+                    if (isNpc) { continue; }
+
+                }
+            }
             ImGui::EndTabItem();
         }
 
