@@ -278,7 +278,7 @@ I recommend approaching this assignment in the following order:
    you will need to implement getPosition() (✓)
 3. Implement spawnPlayer() so that it correctly uses the configuration
    specified by the level file, so you can start testing collisions (✓)
-4. Implement the camera changes described above (⛌)
+4. Implement the camera changes described above (✓)
 5. Implement spawnSword() so that it spawns a sword in the correct position
    with the correct lifespan (✓)
 6. Implement player attacking / sword collision with NPCs / health / damage (⛌)
