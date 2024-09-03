@@ -460,7 +460,17 @@ void SceneZelda::spawnSword(std::shared_ptr<Entity> entity)
     // - be given a damage value of 1
     // - should play the "Slash" sound
 
-    // e.g. m_game->playSound("Slash");
+    auto& transf = entity->get<CTransform>();
+    auto anim = entity->get<CAnimation>();
+
+    auto sword = m_entityManager.addEntity("Sword");
+    sword->add<CAnimation>().animation = anim.animation;
+    sword->add<CBoundingBox>(anim.animation.getSize());
+    sword->add<CTransform>(transf);
+    sword->add<CDamage>(1);
+    sword->add<CLifespan>(2, m_currentFrame);
+
+    m_game->playSound("SSwordSlash");
 }
 
 std::shared_ptr<Entity> SceneZelda::player()
@@ -538,6 +548,7 @@ void SceneZelda::sMovement()
             state.state = "atkRight";
             state.prevState = "standLeft";
         }
+        spawnSword(player());
     }
     else
     {
@@ -565,6 +576,12 @@ void SceneZelda::sStatus()
     // TODO:
     // Implement Lifespan here
     // Implement Invincibility Frames here
+    for (const auto& el: m_entityManager.getEntities())
+    {
+        if (!el->has<CLifespan>()) { continue; }
+        const auto& life = el->get<CLifespan>();
+        if (life.lifespan + life.frameCreated < m_currentFrame) { el->destroy(); }
+    }
 }
 
 void SceneZelda::sAnimation()
