@@ -38,9 +38,17 @@ void GameEngine::quit()
     m_window.close();
 }
 
-void GameEngine::playSound(const std::string& soundName) {}
+void GameEngine::playSound(const std::string& soundName)
+{
+    auto sound = assets().getSound(soundName);
+    sound.play();
+}
 
-void GameEngine::stopSound(const std::string& soundName) {}
+void GameEngine::stopSound(const std::string& soundName)
+{
+    auto sound = assets().getSound(soundName);
+    sound.stop();
+}
 
 Assets& GameEngine::assets()
 {

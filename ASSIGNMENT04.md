@@ -280,7 +280,7 @@ I recommend approaching this assignment in the following order:
    specified by the level file, so you can start testing collisions (✓)
 4. Implement the camera changes described above (⛌)
 5. Implement spawnSword() so that it spawns a sword in the correct position
-   with the correct lifespan
+   with the correct lifespan (✓)
 6. Implement player attacking / sword collision with NPCs / health / damage (⛌)
 7. Implement player animation to correctly animate based on player state (✓)
 8. Implement NPC Patrol behavior
