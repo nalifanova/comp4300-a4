@@ -68,16 +68,6 @@ void guiShowTable(const std::vector<std::shared_ptr<Entity>>& entities, bool sho
     }
 }
 
-void createEntity(std::shared_ptr<Entity>& entity)
-{
-    // entity->addComponent<CAnimation>(m_game->assets().getAnimation(tile.name), true);
-    // entity->addComponent<CTransform>(gridToMidPixel(tile.x * m_gridSize.x, tile.y * m_gridSize.y, entity));
-    //
-    // const auto& anim = entity->getComponent<CAnimation>().animation;
-    // auto& transf = entity->getComponent<CTransform>();
-
-}
-
 void SceneZelda::drawTexture(const std::shared_ptr<Entity>& entity) const
 {
     auto& transform = entity->get<CTransform>();
