@@ -1,6 +1,8 @@
 #ifndef VEC2_H
 #define VEC2_H
 
+#include <iostream>
+
 class Vec2
 {
 public:
@@ -19,8 +21,28 @@ public:
     bool operator==(const Vec2& rhs) const;
     bool operator!=(const Vec2& rhs) const;
 
+    friend std::ostream&
+    operator<<(std::ostream& os, const Vec2& vec)
+    {
+        return os << "(" << vec.x << ", " << vec.y << ")";
+    }
+
+    [[nodiscard]] float dist(const Vec2& rhs) const;
+
+    /**
+     * Line segment intersection
+     * 2D Cross
+     *          a x b = (a.x * b.y) - (a.y * b.x)
+     *
+     * Properties:
+     *          a x a = 0
+     *          (a + r) x s = (a x s) + (r x s)
+     *          (r x s) = - (s x r)
+     */
+    [[nodiscard]] float cross2d(const Vec2& rhs) const;
     [[nodiscard]] float length() const;
     [[nodiscard]] float length_squared() const;
+    [[nodiscard]] float angle(const Vec2& point) const;
 
     Vec2 normalize();
 
