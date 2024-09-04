@@ -42,6 +42,8 @@ protected:
     // void changePlayerStateTo(const std::string& state, const Vec2& facing);
     Vec2 windowToWorld(const Vec2& mousePosition) const;
     Vec2 getRoomXY(const Vec2& pos) const;
+    bool isPositionOccupied(const sf::Vector2f& position);
+    void drawTexture(const std::shared_ptr<Entity>& entity) const;
 
     PlayerConfig m_playerConfig{};
     sf::Text m_gridText;
@@ -53,4 +55,6 @@ protected:
     bool m_drawGrid = false;
     bool m_drawTextures = true;
     bool m_follow = false;
+
+    bool m_isDragging = false;
 };

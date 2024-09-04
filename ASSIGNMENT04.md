@@ -269,7 +269,7 @@ You can use all of your collision code from Assignment 3 in this assignment.
 
 I recommend approaching this assignment in the following order:
 
-[0] Implement the GUI whenever you feel you'd like to have it for debugging (in progress)
+[0] Implement the GUI whenever you feel you'd like to have it for debugging (✓)
 1. Implement WASD movement for the player such that it moves u/l/d/r when
    those keys are pressed. This will allow you to test rectangular collisions
    as soon as possible (✓)

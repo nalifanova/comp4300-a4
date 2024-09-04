@@ -1,16 +1,33 @@
 #include "SceneZelda.hpp"
 
 #include <fstream>
-#include <imgui_internal.h>
 #include <iostream>
+#include <random>
 
 #include "imgui.h"
+#include <imgui_internal.h>
 #include "imgui-SFML.h"
 
 #include "Components.hpp"
 #include "GameEngine.hpp"
 #include "Physics.hpp"
 #include "SceneMenu.hpp"
+
+sf::Vector2f getRandomOffset(float size) {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dist(0, 3);
+
+    if (size < 64.0f) { size = 64.0f; } // workaround
+    switch (dist(gen)) {
+        case 0: return { size, 0 };   // right
+        case 1: return { -size, 0 };  // left
+        case 2: return { 0, size };   // down
+        case 3: return { 0, -size };  // up
+        default:
+            return { 0, 0 };
+    }
+}
 
 void guiShowTable(const std::vector<std::shared_ptr<Entity>>& entities, bool showHeader = true)
 {
@@ -59,6 +76,39 @@ void createEntity(std::shared_ptr<Entity>& entity)
     // const auto& anim = entity->getComponent<CAnimation>().animation;
     // auto& transf = entity->getComponent<CTransform>();
 
+}
+
+void SceneZelda::drawTexture(const std::shared_ptr<Entity>& entity) const
+{
+    auto& transform = entity->get<CTransform>();
+    sf::Color c = sf::Color::White;
+    if (entity->has<CInvincibility>())
+    {
+        c = sf::Color(255, 255, 255, 128);
+    }
+    if (entity->has<CAnimation>())
+    {
+        auto& animation = entity->get<CAnimation>().animation;
+        animation.getSprite().setRotation(transform.angle);
+        animation.getSprite().setPosition(
+            transform.pos.x, transform.pos.y
+            );
+        animation.getSprite().setScale(
+            transform.scale.x, transform.scale.y
+            );
+        animation.getSprite().setColor(c);
+        m_game->window().draw(animation.getSprite());
+    }
+}
+
+bool SceneZelda::isPositionOccupied(const sf::Vector2f& position)
+{
+    for (auto& e: m_entityManager.getEntities())
+    {
+        if (e->get<CAnimation>().animation.getSprite().getGlobalBounds().contains(position))
+            return true;
+    }
+    return false;
 }
 
 SceneZelda::SceneZelda(GameEngine* game, std::string& levelPath) :
@@ -158,59 +208,43 @@ void SceneZelda::sRender()
     // draw all Entity textures / animations
     if (m_drawTextures)
     {
-        for (const auto& entity: m_entityManager.getEntities())
+        // Note: last rendered is on top of previous rendered
+        std::vector<std::string> tags = {"Tile", "NPC", "Player"};
+        for (const auto& tag: tags)
         {
-            auto& transform = entity->get<CTransform>();
-            sf::Color c = sf::Color::White;
-            if (entity->has<CInvincibility>())
+            for (const auto& entity: m_entityManager.getEntities(tag))
             {
-                c = sf::Color(255, 255, 255, 128);
-            }
-            if (entity->has<CAnimation>())
-            {
-                auto& animation = entity->get<CAnimation>().animation;
-                animation.getSprite().setRotation(transform.angle);
-                animation.getSprite().setPosition(
-                    transform.pos.x, transform.pos.y
-                    );
-                animation.getSprite().setScale(
-                    transform.scale.x, transform.scale.y
-                    );
-                animation.getSprite().setColor(c);
-                m_game->window().draw(animation.getSprite());
-            }
-        }
+                drawTexture(entity);
 
-        for (const auto& entity: m_entityManager.getEntities())
-        {
-            auto& transform = entity->get<CTransform>();
-            if (entity->has<CHealth>())
-            {
-                auto& h = entity->get<CHealth>();
-                Vec2 size(64, 6);
-                sf::RectangleShape rect({size.x, size.y});
-                rect.setPosition(
-                    transform.pos.x - 32,
-                    transform.pos.y - 48
-                    );
-                rect.setFillColor(sf::Color(96, 96, 96));
-                rect.setOutlineColor(sf::Color::Black);
-                rect.setOutlineThickness(2);
-                m_game->window().draw(rect);
-
-                float ratio = (float)(h.current) / h.max;
-                size.x *= ratio;
-                rect.setSize({size.x, size.y});
-                rect.setFillColor(sf::Color(255, 0, 0));
-                rect.setOutlineThickness(0);
-                m_game->window().draw(rect);
-
-                for (int i = 0; i < h.max; i++)
+                auto& transform = entity->get<CTransform>();
+                if (entity->has<CHealth>())
                 {
-                    tick.setPosition(
-                        rect.getPosition() + sf::Vector2f(i * 64 * 1.0 / h.max, 0)
+                    auto& h = entity->get<CHealth>();
+                    Vec2 size(64, 6);
+                    sf::RectangleShape rect({size.x, size.y});
+                    rect.setPosition(
+                        transform.pos.x - 32,
+                        transform.pos.y - 48
                         );
-                    m_game->window().draw(tick);
+                    rect.setFillColor(sf::Color(96, 96, 96));
+                    rect.setOutlineColor(sf::Color::Black);
+                    rect.setOutlineThickness(2);
+                    m_game->window().draw(rect);
+
+                    float ratio = (float)(h.current) / h.max;
+                    size.x *= ratio;
+                    rect.setSize({size.x, size.y});
+                    rect.setFillColor(sf::Color(255, 0, 0));
+                    rect.setOutlineThickness(0);
+                    m_game->window().draw(rect);
+
+                    for (int i = 0; i < h.max; i++)
+                    {
+                        tick.setPosition(
+                            rect.getPosition() + sf::Vector2f(i * 64 * 1.0 / h.max, 0)
+                            );
+                        m_game->window().draw(tick);
+                    }
                 }
             }
         }
@@ -712,13 +746,13 @@ void SceneZelda::sGUI()
             const auto windowSize = ImGui::GetWindowSize().x;
             const int tilesNumber = static_cast<int>(windowSize / (m_gridSize.x + 10));
 
-            for (auto& [tag, anim]: m_game->assets().getAnimations())
+            for (auto& [name, anim]: m_game->assets().getAnimations())
             {
-                if (tag.find("Link") != std::string::npos ) { continue; } // No player pics
+                if (name.find("Link") != std::string::npos ) { continue; } // No player pics
 
                 if (counter++ % tilesNumber != 0) { ImGui::SameLine(); } // tilesNumber columns
 
-                bool isNpc = tag.find("Stand") != std::string::npos;
+                bool isNpc = name.find("Stand") != std::string::npos;
                 const sf::Texture* animTex = anim.getSprite().getTexture();
                 ImVec2 uv0(0.0f, 0.0f);   // Beginning of texture
                 ImVec2 uv1(1.0f, 1.0f);  // Center of texture
@@ -735,10 +769,21 @@ void SceneZelda::sGUI()
                     reinterpret_cast<void*>(animTex->getNativeHandle()),
                     size, uv0, uv1, padding, bgColor))
                 {
-                    std::cout << "Let's create " << anim.getName() << "\n"; // TODO:
                     if (isNpc) { continue; }
 
+                    const auto tile = m_entityManager.addEntity("Tile");
+                    tile->add<CAnimation>(anim, true);
+                    auto view = m_game->window().getView().getCenter();
+                    view.x += m_gridSize.x / 2.0f;
+                    view.y += m_gridSize.y / 2.0f;
+                    while (isPositionOccupied(view)) {
+                        view = view + getRandomOffset(anim.getSprite().getGlobalBounds().width);
+                    }
+                    tile->add<CTransform>(Vec2(view.x, view.y));
+                    tile->add<CBoundingBox>(anim.getSize());
+                    tile->add<CDraggable>();
                 }
+                ImGui::SetItemTooltip("%s", !isNpc ? name.c_str() : "Not Available");
             }
             ImGui::EndTabItem();
         }

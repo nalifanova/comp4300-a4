@@ -58,6 +58,19 @@ bool Vec2::operator!=(const Vec2& rhs) const
     return x != rhs.x || y != rhs.y;
 }
 
+float Vec2::dist(const Vec2& rhs) const
+{
+    const float d_x = abs(x - rhs.x);
+    const float d_y = abs(y - rhs.y);
+    const auto distance = sqrtf(d_x * d_x + d_y * d_y);
+    return distance;
+}
+
+float Vec2::cross2d(const Vec2& rhs) const
+{
+    return x * rhs.y - y * rhs.x;
+}
+
 float Vec2::length() const
 {
     return std::sqrt(x * x + y * y);
@@ -66,6 +79,11 @@ float Vec2::length() const
 float Vec2::length_squared() const
 {
     return x * x + y * y;
+}
+
+float Vec2::angle(const Vec2& point) const
+{
+    return atan2(y - point.y, x - point.x);
 }
 
 Vec2 Vec2::normalize()
