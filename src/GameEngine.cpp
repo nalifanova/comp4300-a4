@@ -84,6 +84,7 @@ void GameEngine::init(const std::string& path)
 void GameEngine::update()
 {
     currentScene()->update();
+    currentScene()->simulate(m_simulationSpeed);
 }
 
 void GameEngine::sUserInput()
