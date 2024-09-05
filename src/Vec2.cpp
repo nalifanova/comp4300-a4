@@ -26,6 +26,11 @@ Vec2 Vec2::operator-(const float val) const
     return {x - val, y - val};
 }
 
+Vec2 Vec2::operator*(const Vec2& rhs) const
+{
+    return {x * rhs.x, y * rhs.y};
+}
+
 Vec2 Vec2::operator+(const Vec2& rhs) const
 {
     return {x + rhs.x, y + rhs.y};
