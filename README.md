@@ -48,4 +48,7 @@ to ensure that the code remains readable and consistent.
 
 ### Build & run
 
-To be continued ...
+run the script
+```bash
+chmod +x PlayGame.sh && ./PlayGame.sh
+```
