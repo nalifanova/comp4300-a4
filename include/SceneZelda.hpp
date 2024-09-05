@@ -51,6 +51,7 @@ protected:
     void stateAnimation(std::string& animName, const std::shared_ptr<Entity>& entity) const;
     bool isPositionOccupied(const sf::Vector2f& position);
     void drawTexture(const std::shared_ptr<Entity>& entity) const;
+    void guiShowTable(const std::vector<std::shared_ptr<Entity>>& entities, bool showHeader = true);
 
     PlayerConfig m_playerConfig{};
     sf::Text m_gridText;
