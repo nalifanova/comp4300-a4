@@ -94,7 +94,7 @@ const sf::Font& Assets::getFont(const std::string& fonrName) const
     return m_fontMap.at(fonrName);
 }
 
-const sf::Sound& Assets::getSound(const std::string& soundName) const
+sf::Sound& Assets::getSound(const std::string& soundName)
 {
     assert(m_soundMap.find(soundName) != m_soundMap.end());
     return m_soundMap.at(soundName);

@@ -25,6 +25,7 @@ protected:
     void loadLevel(const std::string& filename);
 
     Vec2 getPosition(int rx, int ry, int tx, int ty) const;
+    Vec2 setPosition(const Vec2& vec) const;
     void spawnPlayer();
     void spawnSword(std::shared_ptr<Entity> entity);
     std::shared_ptr<Entity> player();
