@@ -16,7 +16,13 @@ void Scene::doAction(const Action& action)
     sDoAction(action);
 }
 
-void Scene::simulate(const size_t frames) {}
+void Scene::simulate(const size_t frames)
+{
+    for (size_t i = 0; i < frames; i++)
+    {
+        update();
+    }
+}
 
 void Scene::registerAction(int inputKey, const std::string& actionName)
 {

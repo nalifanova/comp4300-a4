@@ -44,6 +44,12 @@ protected:
     Vec2 getRoomXY(const Vec2& pos) const;
     bool isPositionOccupied(const sf::Vector2f& position);
     void drawTexture(const std::shared_ptr<Entity>& entity) const;
+    void collisionEntities(std::shared_ptr<Entity>& entity, std::shared_ptr<Entity>& tile);
+    void entityTileCollision();
+    void playerNpcCollision();
+    void swordNpcCollision();
+    void entityHeartCollision();
+    void blackTileCollision();
 
     PlayerConfig m_playerConfig{};
     sf::Text m_gridText;
