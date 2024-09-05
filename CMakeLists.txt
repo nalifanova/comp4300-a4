@@ -18,7 +18,7 @@ include(FetchContent)
 FetchContent_Declare(SFML
     GIT_REPOSITORY https://github.com/SFML/SFML.git
     GIT_TAG 2.6.x)
-option(SFML_BUILD_AUDIO "Build audio" OFF)
+option(SFML_BUILD_AUDIO "Build audio" ON)
 FetchContent_MakeAvailable(SFML)
 
 ## Adding imggui and imgui-sfml
