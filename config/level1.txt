@@ -35,9 +35,10 @@ Tile TileRock5 0 0 19 1 1 1
 Tile TileRock5 0 0 20 1 1 1
 
 Tile TileBush 0 0 15 7 1 1
-NPC ArmosStandFront   0 0 17 7 0 0 2 2 Follow 1
-NPC TektiteStandFront 0 0 16 8 0 0 2 2 Patrol 1 3 18 8 18 11 16 11
-NPC TektiteStandFront 0 0  4 10 0 0 2 2 Patrol 1 1  8 10
+NPC ArmosStandFront   0 0 17 7 0 0 4 2 Follow 1
+NPC TektiteStandFront 0 0 16 8 0 0 5 1 Patrol 1 3 18 8 18 11 16 11
+NPC TektiteStandFront 0 0  4 10 0 0 5 1 Patrol 1 1  8 10
+NPC ArmosStandFront   0 0  3  3 0 0 4 2 Follow 1
 
 Tile TileBlack 0 0 20 12 0 0
 

@@ -88,8 +88,10 @@ endif()
 
 file(GLOB fonts ${CMAKE_SOURCE_DIR}/assets/fonts/*.ttf)
 file(GLOB images ${CMAKE_SOURCE_DIR}/assets/images/*.png)
+file(GLOB sounds ${CMAKE_SOURCE_DIR}/assets/sounds/*.*)
 file(GLOB texts ${CMAKE_SOURCE_DIR}/config/*.txt)
 
-file(COPY ${fonst} DESTINATION ${CMAKE_BINARY_DIR}/assets/fonts)
-file(COPY ${images} DESTINATION ${CMAKE_BINARY_DIR}/assets/images)
-file(COPY ${texts} DESTINATION ${CMAKE_BINARY_DIR}/config)
+file(COPY ${fonts} DESTINATION ${CMAKE_BINARY_DIR}/bin/assets/fonts)
+file(COPY ${images} DESTINATION ${CMAKE_BINARY_DIR}/bin/assets/images)
+file(COPY ${sounds} DESTINATION ${CMAKE_BINARY_DIR}/bin/assets/sounds)
+file(COPY ${texts} DESTINATION ${CMAKE_BINARY_DIR}/bin/config)

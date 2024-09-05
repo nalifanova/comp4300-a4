@@ -14,6 +14,9 @@ Texture TexLake9 assets/images/zelda_lake9.png
 Texture TexAtkDown assets/images/zelda_link_atkd.png
 Texture TexAtkRight assets/images/zelda_link_atkr.png
 Texture TexAtkUp assets/images/zelda_link_atku.png
+Texture TexSwordUp assets/images/zelda_sword_atku.png
+Texture TexSwordDown assets/images/zelda_sword_atkd.png
+Texture TexSwordRight assets/images/zelda_sword_atkr.png
 Texture TexMoveDown assets/images/zelda_link_mvd.png
 Texture TexMoveRight assets/images/zelda_link_mvr.png
 Texture TexMoveUp assets/images/zelda_link_mvu.png
@@ -48,9 +51,12 @@ Animation TileLake6 TexLake6 1 0
 Animation TileLake7 TexLake7 1 0
 Animation TileLake8 TexLake8 1 0
 Animation TileLake9 TexLake9 1 0
-Animation LinkAtkDown TexAtkDown 4 4
-Animation LinkAtkRight TexAtkRight 4 4
-Animation LinkAtkUp TexAtkUp 4 4
+Animation LinkAtkDown TexAtkDown 1 0
+Animation LinkAtkRight TexAtkRight 1 0
+Animation LinkAtkUp TexAtkUp 1 0
+Animation LinkSwordUp TexSwordUp 1 0
+Animation LinkSwordDown TexSwordDown 1 0
+Animation LinkSwordRight TexSwordRight 1 0
 Animation LinkMoveDown TexMoveDown 2 8
 Animation LinkMoveRight TexMoveRight 2 8
 Animation LinkMoveUp TexMoveUp 2 8

@@ -51,39 +51,6 @@ void guiShowTable(const std::vector<std::shared_ptr<Entity>>& entities, bool sho
     }
 }
 
-void SceneZelda::drawTexture(const std::shared_ptr<Entity>& entity) const
-{
-    auto& transform = entity->get<CTransform>();
-    sf::Color c = sf::Color::White;
-    if (entity->has<CInvincibility>())
-    {
-        c = sf::Color(255, 255, 255, 128);
-    }
-    if (entity->has<CAnimation>())
-    {
-        auto& animation = entity->get<CAnimation>().animation;
-        animation.getSprite().setRotation(transform.angle);
-        animation.getSprite().setPosition(
-            transform.pos.x, transform.pos.y
-            );
-        animation.getSprite().setScale(
-            transform.scale.x, transform.scale.y
-            );
-        animation.getSprite().setColor(c);
-        m_game->window().draw(animation.getSprite());
-    }
-}
-
-bool SceneZelda::isPositionOccupied(const sf::Vector2f& position)
-{
-    for (auto& e: m_entityManager.getEntities())
-    {
-        if (e->get<CAnimation>().animation.getSprite().getGlobalBounds().contains(position))
-            return true;
-    }
-    return false;
-}
-
 SceneZelda::SceneZelda(GameEngine* game, std::string& levelPath) :
     Scene(game), m_levelPath(levelPath)
 {
@@ -112,25 +79,15 @@ void SceneZelda::update()
 // protected
 void SceneZelda::onEnd()
 {
-    // TODO
-    // When the scene ends, change back to the MENU scene
-    // Stop the music
-    // Play the menu music
     m_game->changeScene("Menu", std::make_shared<SceneMenu>(m_game));
 }
 
 void SceneZelda::sDoAction(const Action& action)
 {
     auto& input = player()->get<CInput>();
-    // TODO:
-    // Implement all actions described for the game here
-    // Only the setting of the player's input component variables should be set here
-    // Do minimal logic in this function
 
-    if (action.name() == "MOUSE_MOVE")
-    {
-        m_mousePos = action.pos();
-    }
+    // Only the setting of the player's input component variables should be set here
+    if (action.name() == "MOUSE_MOVE") { m_mousePos = action.pos(); }
 
     if (action.type() == "START")
     {
@@ -182,10 +139,10 @@ void SceneZelda::sRender()
     if (m_drawTextures)
     {
         // Note: last rendered is on top of previous rendered
-        // std::vector<std::string> tags = {"Tile", "NPC", "Player"};
-        // for (const auto& tag: tags)
-        // {
-            for (const auto& entity: m_entityManager.getEntities())
+        std::vector<std::string> tags = {"Tile", "NPC", "Player", "Sword"};
+        for (const auto& tag: tags)
+        {
+            for (const auto& entity: m_entityManager.getEntities(tag))
             {
                 drawTexture(entity);
 
@@ -220,7 +177,7 @@ void SceneZelda::sRender()
                     }
                 }
             }
-        // }
+        }
     }
 
     // draw all Entity collision bounding boxes with a rectangle shape
@@ -464,31 +421,30 @@ void SceneZelda::spawnPlayer()
 
     auto p = m_entityManager.addEntity("Player");
     p->add<CTransform>(Vec2(m_playerConfig.x, m_playerConfig.y));
+    p->get<CTransform>().facing = Vec2(0.0, -1.0f); // down
     p->add<CAnimation>(m_game->assets().getAnimation("LinkStandDown"), true);
     p->add<CBoundingBox>(Vec2(m_playerConfig.cX, m_playerConfig.cY), true, false);
     p->add<CDraggable>(); // to test draggable
     p->add<CHealth>(m_playerConfig.health, m_playerConfig.health);
-    p->add<CState>("standDown");
+    p->add<CState>("LinkStand");
 }
 
 void SceneZelda::spawnSword(std::shared_ptr<Entity> entity)
 {
-    // TODO:
-    // Implement the spawning of the sword, which:
-    // - should be given the appropriate lifespan
-    // - should spawn at the appropriate location based on player's facing direction
-    // - be given a damage value of 1
-    // - should play the "Slash" sound
-
     auto& transf = entity->get<CTransform>();
-    auto anim = entity->get<CAnimation>();
 
     auto sword = m_entityManager.addEntity("Sword");
-    sword->add<CAnimation>().animation = anim.animation;
-    sword->add<CBoundingBox>(anim.animation.getSize() + 10);
-    sword->add<CTransform>(transf);
+    // for sword position regarding player's hand and movement direction
+    auto sign = transf.facing.y != 0 ? -1.0f : 1.0f;
+    sword->add<CTransform>(transf.pos + Vec2(m_gridSize.x, m_gridSize.y) * transf.facing * sign);
+    sword->get<CTransform>().facing = transf.facing;
+
+    std::string animName = "LinkSword";
+    stateAnimation(animName, sword);
+    sword->add<CAnimation>(m_game->assets().getAnimation(animName), true);
+    sword->add<CBoundingBox>(sword->get<CAnimation>().animation.getSize());
     sword->add<CDamage>(1);
-    sword->add<CLifespan>(2, m_currentFrame);
+    sword->add<CLifespan>(15, m_currentFrame);
 
     m_game->playSound("SSwordSlash");
 }
@@ -515,61 +471,80 @@ void SceneZelda::sMovement()
 {
     assert(player() != nullptr);
 
-    auto& input = player()->get<CInput>();
-    auto& state = player()->get<CState>();
-    auto& transf = player()->get<CTransform>();
+    const auto mPlayer = player();
+    const auto& input = mPlayer->get<CInput>();
+    auto& state = mPlayer->get<CState>();
+    auto& transf = mPlayer->get<CTransform>();
 
     Vec2 playerVelocity(0, 0);
-    m_playerConfig.speed = 5;
+    Vec2 facing = transf.facing;
+    bool isMoving = true;
+
+    if ((input.up && input.down) || (input.left && input.right) || (input.up && input.attack) ||
+        (input.down && input.attack) || (input.left && input.attack) || (input.right && input.attack)
+    )
+    {
+        player()->get<CAnimation>().paused = true;
+        return; // can't hold keys in opposite directions
+    }
 
     if (input.up)
     {
-        state.state = "standUp";
         playerVelocity.y = -m_playerConfig.speed;
-        state.prevState = state.state;
+        facing = Vec2(0.0, 1.0f);
     }
     else if (input.down)
     {
-        state.state = "standDown";
         playerVelocity.y = m_playerConfig.speed;
-        state.prevState = state.state;
+        facing = Vec2(0.0, -1.0f);
     }
     else if (input.right)
     {
-        state.state = "standRight";
         playerVelocity.x = m_playerConfig.speed;
-        if (transf.scale.x < 0) { transf.scale.x = 1; } // flipping to the right direction
-        state.prevState = state.state;
+        facing = Vec2(1.0, 0.0f);
     }
     else if (input.left)
     {
-        state.state = "standLeft"; // flipped
         playerVelocity.x = -m_playerConfig.speed;
-        if (transf.scale.x > 0) { transf.scale.x = -1; } // flipping to the left direction
-        state.prevState = state.state;
-    }
-    else if (input.attack)
-    {
-        if (state.state == "standUp")
-        {
-            state.state = "atkUp";
-            state.prevState = "standUp";
-        }
-        else if (state.state == "standDown")
-        {
-            state.state = "atkDown";
-            state.prevState = "standDown";
-        }
-        else if (state.state == "standLeft" || state.state == "standRight")
-        {
-            state.state = "atkRight";
-            state.prevState = "standLeft";
-        }
-        spawnSword(player());
+        facing = Vec2(-1.0, 0.0f);
     }
     else
     {
-        state.state = state.prevState;
+        playerVelocity = Vec2(0.0, 0.0f);;
+        isMoving = false;
+    }
+
+    if (transf.facing != facing)
+    {
+        transf.facing = facing; // update
+        state.changed = true;
+    }
+
+    // attack / move / stand
+    if (input.attack)
+    {
+        if (state.state != "LinkAtk") // prefix is set here, suffix in animation
+        {
+            state.state = "LinkAtk";
+            state.changed = true;
+            spawnSword(mPlayer);
+        }
+    }
+    else if (isMoving)
+    {
+        if (state.state != "LinkMove")
+        {
+            state.state = "LinkMove";
+            state.changed = true;
+        }
+    }
+    else
+    {
+        if (state.state != "LinkStand")
+        {
+            state.state = "LinkStand";
+            state.changed = true;
+        }
     }
 
     player()->get<CTransform>().velocity = playerVelocity;
@@ -591,47 +566,56 @@ void SceneZelda::sAI()
 
 void SceneZelda::sStatus()
 {
-    // TODO:
-    // Implement Lifespan here
-    // Implement Invincibility Frames here
-    for (const auto& el: m_entityManager.getEntities())
+    for (auto sword: m_entityManager.getEntities("Sword"))
     {
-        if (!el->has<CLifespan>()) { continue; }
-        const auto& life = el->get<CLifespan>();
-        if (life.lifespan + life.frameCreated < m_currentFrame) { el->destroy(); }
+        auto& lifespan = sword->get<CLifespan>();
+
+        if (static_cast<int>(m_currentFrame) - lifespan.frameCreated > lifespan.lifespan)
+        {
+            sword->destroy();
+            player()->get<CInput>().attack = false;
+        }
+    }
+
+    auto mPlayer = player();
+    if (mPlayer->has<CInvincibility>())
+    {
+        auto& invincibility = mPlayer->get<CInvincibility>();
+        invincibility.iframes -= 1;
+        if (invincibility.iframes < 0) { mPlayer->remove<CInvincibility>(); }
+    }
+}
+
+void facingDirection(std::string& animName, CTransform& transf)
+{
+    if (transf.facing.y == 1.0f)
+    {
+        animName.append("Up");
+        transf.scale.x = 1.0f;
+    }
+    else if (transf.facing.y == -1.0f)
+    {
+        animName.append("Down");
+        transf.scale.x = 1.0f;
+    }
+    else if (transf.facing.x != 0.0f)
+    {
+        animName.append("Right");
+        transf.scale.x = transf.facing.x; // flipping to left if needed
     }
 }
 
 void SceneZelda::sAnimation()
 {
-    // TODO:
-    // Implement player facing direction animation
-    // Implement sword animation based on player facing
-    // The sword should move if the player changes direction mid swing
-    // Implement destruction of entities with non-repeating finished animations
+    // Implement destruction of entities with non-repeating finished animations ?
     auto p = player();
-    auto& state = p->get<CState>().state;
+    auto& state = p->get<CState>();
 
-    std::map<std::string, std::string> states = {
-        {"atkDown", "LinkAtkDown"},
-        {"atkLeft", "LinkAtkRight"},
-        {"atkRight", "LinkAtkRight"},
-        {"atkUp", "LinkAtkUp"},
-        {"moveDown", "LinkMoveDown"},
-        {"moveLeft", "LinkMoveRight"},
-        {"moveRight", "LinkMoveRight"},
-        {"moveUp", "LinkMoveUp"},
-        {"standDown", "LinkStandDown"},
-        {"standLeft", "LinkStandRight"},
-        {"standRight", "LinkStandRight"},
-        {"standUp", "LinkStandUp"},
-    };
-    for (const auto& [s, animation]: states)
+    if (state.changed)
     {
-        if (state == s)
-        {
-            p->add<CAnimation>(m_game->assets().getAnimation(animation), true);
-        }
+        std::string animName = state.state; // prefix like LinkStand
+        stateAnimation(animName, p);
+        state.changed = false;
     }
 
     // Animate entities
@@ -639,8 +623,9 @@ void SceneZelda::sAnimation()
     {
         if (!e->has<CAnimation>()) { continue; }
 
-        if (e->get<CAnimation>().animation.hasEnded() && !e->get<CAnimation>().repeat) { e->destroy(); }
-        e->get<CAnimation>().animation.update();
+        auto& anim = e->get<CAnimation>();
+        if (anim.animation.hasEnded() && !anim.repeat) { e->destroy(); }
+        if (!anim.paused) { anim.animation.update(); }
     }
 }
 
@@ -662,146 +647,6 @@ void SceneZelda::sCamera()
         view.setCenter(room.x * width() + width() / 2.0f, room.y * height() + height() / 2.0f);
     }
     m_game->window().setView(view);
-}
-
-void SceneZelda::collisionEntities(std::shared_ptr<Entity>& entity, std::shared_ptr<Entity>& tile)
-{
-    const auto overlap = Physics::getOverlap(entity, tile);
-    if (overlap.x < 0.0f || overlap.y < 0.0f) { return; }
-
-    // Overlap: defining a direction
-    const auto prevOverlap = Physics::getPreviousOverlap(entity, tile);
-    auto& entityPos = entity->get<CTransform>().pos;
-    auto& tilePos = tile->get<CTransform>().pos;
-
-    // top/bottom collision
-    if (prevOverlap.x > 0.0f) { entityPos.y += entityPos.y < tilePos.y ? -overlap.y : overlap.y; }
-
-    // side collision
-    if (prevOverlap.y > 0.0f) { entityPos.x += entityPos.x < tilePos.x ? -overlap.x : overlap.x; }
-}
-
-void SceneZelda::entityTileCollision()
-{
-    auto mPlayer = player();
-    for (auto& tile: m_entityManager.getEntities("Tile"))
-    {
-        collisionEntities(mPlayer, tile);
-
-        for (auto& npc: m_entityManager.getEntities("NPC"))
-        {
-            collisionEntities(npc, tile);
-        }
-    }
-}
-
-void SceneZelda::playerNpcCollision()
-{
-    auto mPlayer = player();
-    for (auto& npc: m_entityManager.getEntities("NPC"))
-    {
-        auto overlap = Physics::getOverlap(mPlayer, npc);
-        if (overlap.x < 0.0f || overlap.y < 0.0f) { return; }
-
-        mPlayer->get<CHealth>().current -= npc->get<CDamage>().damage;
-        mPlayer->add<CInvincibility>(30);
-
-        if (mPlayer->get<CHealth>().current <= 0)
-        {
-            mPlayer->destroy();
-            m_game->playSound("SLinkDied");
-            spawnPlayer();
-        }
-        else
-        {
-            m_game->playSound("SLinkDamaged");
-        }
-    }
-}
-
-void SceneZelda::swordNpcCollision()
-{
-    for (auto& sword: m_entityManager.getEntities("Sword"))
-    {
-        if (!sword->has<CDamage>()) { continue; }
-
-        for (auto& npc: m_entityManager.getEntities("NPC"))
-        {
-            auto overlap = Physics::getOverlap(sword, npc);
-            if (overlap.x < 0.0f || overlap.y < 0.0f) { return; }
-
-            std::cout << npc->get<CAnimation>().animation.getName() << " has HP " << npc->get<CHealth>().current << "\n";
-
-            npc->get<CHealth>().current -= sword->get<CDamage>().damage;
-            sword->remove<CDamage>(); // one click - one damage
-            std::cout << "Player hits NPC with " << sword->get<CDamage>().damage << "\n";
-
-            if (npc->get<CHealth>().current <= 0)
-            {
-                npc->destroy();
-                m_game->playSound("SEnemyDied");
-            }
-            else
-            {
-                m_game->playSound("SEnemyDamaged");
-            }
-        }
-    }
-}
-
-void SceneZelda::entityHeartCollision()
-{
-    for (auto tile : m_entityManager.getEntities("Tile"))
-    {
-        if (tile->get<CAnimation>().animation.getName() != "TileHeart") { continue; }
-
-        // Player and heard
-        auto mPlayer = player();
-        Vec2 overlap = Physics::getOverlap(mPlayer, tile);
-        if (overlap.x >= 0.0f && overlap.y >= 0.0f)
-        {
-            mPlayer->get<CHealth>().current = mPlayer->get<CHealth>().max;
-            tile->destroy();
-            m_game->playSound("SLinkPickupHeart");
-        }
-
-        // NPC and heart
-        for (auto npc : m_entityManager.getEntities("NPC"))
-        {
-            overlap = Physics::getOverlap(mPlayer, tile);
-            if (overlap.x >= 0.0f && overlap.y >= 0.0f)
-            {
-                npc->get<CHealth>().current = npc->get<CHealth>().max;
-                tile->destroy();
-                m_game->playSound("SLinkPickupHeart");
-            }
-        }
-    }
-}
-
-void SceneZelda::blackTileCollision()
-{
-    auto mPlayer = player();
-    auto& playerPos = mPlayer->get<CTransform>().pos;
-    std::vector<Vec2> coords;
-    bool move = false;
-    for (auto& tile: m_entityManager.getEntities("Tile"))
-    {
-        auto& anim = tile->get<CAnimation>().animation;
-        if (anim.getName() != "TileBlack") { continue; }
-
-        Vec2 overlap = Physics::getOverlap(mPlayer, tile);
-        if (overlap.x >= 0.0f && overlap.y >= 0.0f) { move = true; }
-        else { coords.push_back(tile->get<CTransform>().pos); }
-    }
-
-    if (move)
-    {
-        auto randomPos = Physics::getRandomCoordinates(coords);
-        sf::Vector2f pos2f(randomPos.x, randomPos.y);
-        while (isPositionOccupied(pos2f)) { pos2f = pos2f + Physics::getRandomOffset(m_gridSize.x); }
-        playerPos = Vec2(pos2f.x, pos2f.y);
-    }
 }
 
 void SceneZelda::sCollision()
@@ -944,4 +789,193 @@ Vec2 SceneZelda::getRoomXY(const Vec2& pos) const
     if (pos.x < 0) { roomX--; }
     if (pos.y < 0) { roomY--; }
     return {static_cast<float>(roomX), static_cast<float>(roomY)};
+}
+
+// helper methods
+void SceneZelda::collisionEntities(std::shared_ptr<Entity>& entity, std::shared_ptr<Entity>& tile)
+{
+    const auto overlap = Physics::getOverlap(entity, tile);
+    if (overlap.x > 0.0f && overlap.y > 0.0f)
+    {
+        // Overlap: defining a direction
+        const auto prevOverlap = Physics::getPreviousOverlap(entity, tile);
+        auto& entityPos = entity->get<CTransform>().pos;
+        auto& tilePos = tile->get<CTransform>().pos;
+
+        // top/bottom collision
+        if (prevOverlap.x > 0.0f) { entityPos.y += entityPos.y < tilePos.y ? -overlap.y : overlap.y; }
+
+        // side collision
+        if (prevOverlap.y > 0.0f) { entityPos.x += entityPos.x < tilePos.x ? -overlap.x : overlap.x; }
+    }
+}
+
+void SceneZelda::entityTileCollision()
+{
+    auto mPlayer = player();
+    for (auto& tile: m_entityManager.getEntities("Tile"))
+    {
+        collisionEntities(mPlayer, tile);
+
+        for (auto& npc: m_entityManager.getEntities("NPC"))
+        {
+            collisionEntities(npc, tile);
+        }
+    }
+}
+
+void SceneZelda::playerNpcCollision()
+{
+    auto mPlayer = player();
+    if (mPlayer->has<CInvincibility>()) { return; }
+
+    for (auto& npc: m_entityManager.getEntities("NPC"))
+    {
+        auto overlap = Physics::getOverlap(mPlayer, npc);
+        if (overlap.x > 0.0f && overlap.y > 0.0f)
+        {
+            mPlayer->get<CHealth>().current -= npc->get<CDamage>().damage;
+            mPlayer->add<CInvincibility>(60);
+            // Debug msg
+            std::cout << "Damage of " << npc->get<CAnimation>().animation.getName() << " is "
+                << npc->get<CDamage>().damage << "\n";
+
+            if (mPlayer->get<CHealth>().current <= 0)
+            {
+                mPlayer->destroy();
+                m_game->playSound("SLinkDied");
+                spawnPlayer();
+            }
+            else
+            {
+                m_game->playSound("SLinkDamaged");
+            }
+        }
+    }
+}
+
+void SceneZelda::swordNpcCollision()
+{
+    for (auto& sword: m_entityManager.getEntities("Sword"))
+    {
+        if (!sword->has<CDamage>()) { continue; }
+
+        for (auto& npc: m_entityManager.getEntities("NPC"))
+        {
+            auto overlap = Physics::getOverlap(sword, npc);
+            if (overlap.x > 0.0f && overlap.y > 0.0f)
+            {
+                // Debug msg
+                std::cout << npc->get<CAnimation>().animation.getName() << " has HP " << npc->get<CHealth>().current <<
+                    "\n";
+
+                npc->get<CHealth>().current -= sword->get<CDamage>().damage;
+                sword->remove<CDamage>(); // one click - one damage
+                // Debug msg
+                std::cout << "Player hits NPC with " << sword->get<CDamage>().damage << "\n";
+
+                if (npc->get<CHealth>().current <= 0)
+                {
+                    npc->destroy();
+                    m_game->playSound("SEnemyDied");
+                }
+                else
+                {
+                    m_game->playSound("SEnemyDamaged");
+                }
+            }
+        } // end npc loop
+    } // end sword loop
+}
+
+void SceneZelda::entityHeartCollision()
+{
+    for (auto tile: m_entityManager.getEntities("Tile"))
+    {
+        if (tile->get<CAnimation>().animation.getName() != "TileHeart") { continue; }
+
+        // Player and heard
+        auto mPlayer = player();
+        Vec2 overlap = Physics::getOverlap(mPlayer, tile);
+        if (overlap.x >= 0.0f && overlap.y >= 0.0f)
+        {
+            mPlayer->get<CHealth>().current = mPlayer->get<CHealth>().max;
+            tile->destroy();
+            m_game->playSound("SLinkPickupHeart");
+        }
+
+        // NPC and heart
+        for (auto npc: m_entityManager.getEntities("NPC"))
+        {
+            overlap = Physics::getOverlap(mPlayer, tile);
+            if (overlap.x >= 0.0f && overlap.y >= 0.0f)
+            {
+                npc->get<CHealth>().current = npc->get<CHealth>().max;
+                tile->destroy();
+                m_game->playSound("SLinkPickupHeart");
+            }
+        }
+    }
+}
+
+void SceneZelda::blackTileCollision()
+{
+    auto mPlayer = player();
+    auto& playerPos = mPlayer->get<CTransform>().pos;
+    std::vector<Vec2> coords;
+    bool move = false;
+    for (auto& tile: m_entityManager.getEntities("Tile"))
+    {
+        auto& anim = tile->get<CAnimation>().animation;
+        if (anim.getName() != "TileBlack") { continue; }
+
+        Vec2 overlap = Physics::getOverlap(mPlayer, tile);
+        if (overlap.x >= 0.0f && overlap.y >= 0.0f) { move = true; }
+        else { coords.push_back(tile->get<CTransform>().pos); }
+    }
+
+    if (move)
+    {
+        auto randomPos = Physics::getRandomCoordinates(coords);
+        sf::Vector2f pos2f(randomPos.x, randomPos.y);
+        while (isPositionOccupied(pos2f)) { pos2f = pos2f + Physics::getRandomOffset(m_gridSize.x); }
+        playerPos = Vec2(pos2f.x, pos2f.y);
+    }
+}
+
+void SceneZelda::stateAnimation(std::string& animName, const std::shared_ptr<Entity>& entity) const
+{
+    auto& transf = entity->get<CTransform>();
+    facingDirection(animName, transf);
+    entity->add<CAnimation>(m_game->assets().getAnimation(animName), true);
+}
+
+void SceneZelda::drawTexture(const std::shared_ptr<Entity>& entity) const
+{
+    auto& transform = entity->get<CTransform>();
+    sf::Color c = sf::Color::White;
+    if (entity->has<CInvincibility>()) { c = sf::Color(255, 255, 255, 128); }
+    if (entity->has<CAnimation>())
+    {
+        auto& animation = entity->get<CAnimation>().animation;
+        animation.getSprite().setRotation(transform.angle);
+        animation.getSprite().setPosition(
+            transform.pos.x, transform.pos.y
+            );
+        animation.getSprite().setScale(
+            transform.scale.x, transform.scale.y
+            );
+        animation.getSprite().setColor(c);
+        m_game->window().draw(animation.getSprite());
+    }
+}
+
+bool SceneZelda::isPositionOccupied(const sf::Vector2f& position)
+{
+    for (auto& e: m_entityManager.getEntities())
+    {
+        if (e->get<CAnimation>().animation.getSprite().getGlobalBounds().contains(position))
+            return true;
+    }
+    return false;
 }

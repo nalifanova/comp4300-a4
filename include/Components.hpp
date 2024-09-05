@@ -122,6 +122,7 @@ public:
 
     Animation animation;
     bool repeat = false;
+    bool paused = false;
 };
 
 class CState: public Component
@@ -132,8 +133,8 @@ public:
     explicit CState(std::string s) :
         state(std::move(s)) {}
 
-    std::string state = "standUp";
-    std::string prevState = "standUp";
+    std::string state = "LinkStand";
+    bool changed = false;
 };
 
 class CFollowPlayer: public Component
