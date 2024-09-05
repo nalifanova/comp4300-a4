@@ -291,8 +291,8 @@ I recommend approaching this assignment in the following order:
     line segment AB intersects with any lines of the bounding box of Entity
 11. Implement NPC Follow behavior using 10 to check line of sight
 12. Implement invincibility frames
-13. Implement heart pickups
-14. Implement black tile teleporting
+13. Implement heart pickups (✓)
+14. Implement black tile teleporting (✓)
 
 ### Notes
 
