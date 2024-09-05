@@ -12,14 +12,15 @@
 #include "Physics.hpp"
 #include "SceneMenu.hpp"
 
-void guiShowTable(const std::vector<std::shared_ptr<Entity>>& entities, bool showHeader = true)
+void SceneZelda::guiShowTable(const std::vector<std::shared_ptr<Entity>>& entities, bool showHeader)
 {
-    if (ImGui::BeginTable("Table", 5))
+    if (ImGui::BeginTable("Table", 6))
     {
+        ImGui::TableSetupColumn("Del", ImGuiTableColumnFlags_WidthFixed, 30.0f);
         ImGui::TableSetupColumn("Img", ImGuiTableColumnFlags_WidthFixed, 40.0f);
         ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed, 30.0f);
         ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 50.0f);
-        ImGui::TableSetupColumn("Name");
+        ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 70.0f);
         ImGui::TableSetupColumn("Position");
 
         if (showHeader) { ImGui::TableHeadersRow(); }
@@ -32,18 +33,26 @@ void guiShowTable(const std::vector<std::shared_ptr<Entity>>& entities, bool sho
             ImGui::TableNextRow(0, 32.0f);
 
             ImGui::TableSetColumnIndex(0);
-            ImGui::Image(anim.getSprite(), sf::Vector2f(30.0f, 30.0f));
+            if (ImGui::Button("[x]"))
+            {
+                e->destroy();
+                if (e->tag() == "Player") { spawnPlayer(); }
+            }
+            ImGui::SetItemTooltip("Remove %s", e->tag().c_str());
 
             ImGui::TableSetColumnIndex(1);
-            ImGui::Text("%d", static_cast<int>(e->id()));
+            ImGui::Image(anim.getSprite(), sf::Vector2f(30.0f, 30.0f));
 
             ImGui::TableSetColumnIndex(2);
-            ImGui::Text("%s", e->tag().c_str());
+            ImGui::Text("%d", static_cast<int>(e->id()));
 
             ImGui::TableSetColumnIndex(3);
-            ImGui::Text("%s", anim.getName().c_str());
+            ImGui::Text("%s", e->tag().c_str());
 
             ImGui::TableSetColumnIndex(4);
+            ImGui::Text("%s", anim.getName().c_str());
+
+            ImGui::TableSetColumnIndex(5);
             ImGui::Text("(%d, %d)", static_cast<int>(pos.x), static_cast<int>(pos.y));
         }
 
@@ -699,7 +708,7 @@ void SceneZelda::sGUI()
         {
             size_t counter = 0;
             const auto windowSize = ImGui::GetWindowSize().x;
-            const int tilesNumber = static_cast<int>(windowSize / (m_gridSize.x + 10));
+            const int tilesNumber = static_cast<int>(windowSize / (m_gridSize.x));
 
             for (auto& [name, anim]: m_game->assets().getAnimations())
             {
@@ -750,7 +759,7 @@ void SceneZelda::sGUI()
             {
                 for (auto& [tag, entityVector]: m_entityManager.getEntityMap())
                 {
-                    const bool showHeader = (tag != "Player");
+                    const bool showHeader = (tag != "Player" && tag != "Sword");
                     if (ImGui::CollapsingHeader(tag.c_str()))
                     {
                         guiShowTable(entityVector, showHeader);
