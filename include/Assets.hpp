@@ -23,7 +23,7 @@ public:
     [[nodiscard]] const sf::Texture& getTexture(const std::string& texName) const;
     [[nodiscard]] const Animation& getAnimation(const std::string& animName) const;
     [[nodiscard]] const sf::Font& getFont(const std::string& fonrName) const;
-    [[nodiscard]] const sf::Sound& getSound(const std::string& soundName) const;
+    sf::Sound& getSound(const std::string& soundName);
 
 private:
     void addTexture(const std::string& texName, const std::string& path); // bool s

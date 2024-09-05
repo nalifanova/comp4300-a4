@@ -40,14 +40,12 @@ void GameEngine::quit()
 
 void GameEngine::playSound(const std::string& soundName)
 {
-    auto sound = assets().getSound(soundName);
-    sound.play();
+    assets().getSound(soundName).play();
 }
 
 void GameEngine::stopSound(const std::string& soundName)
 {
-    auto sound = assets().getSound(soundName);
-    sound.stop();
+    assets().getSound(soundName).stop();
 }
 
 Assets& GameEngine::assets()

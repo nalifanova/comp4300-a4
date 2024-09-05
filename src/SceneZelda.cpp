@@ -1,5 +1,6 @@
 #include "SceneZelda.hpp"
 
+#include <cmath>
 #include <fstream>
 #include <iostream>
 
@@ -424,6 +425,18 @@ Vec2 SceneZelda::getPosition(const int rx, const int ry, const int tx, const int
     };
 }
 
+Vec2 SceneZelda::setPosition(const Vec2& vec) const
+{
+    // TODO: make it to include room also
+    const float tileX = std::round((vec.x - m_gridSize.x / 2.0f) / m_gridSize.x);
+    const float tileY = std::round((vec.y - m_gridSize.y / 2.0f) / m_gridSize.y);
+
+    return {
+        tileX * m_gridSize.x + m_gridSize.x / 2.0f,
+        tileY * m_gridSize.y + m_gridSize.y / 2.0f,
+    };
+}
+
 void SceneZelda::spawnPlayer()
 {
     if (const auto mPlayer = player()) { mPlayer->destroy(); }
@@ -471,7 +484,7 @@ void SceneZelda::sDrag()
         if (e->has<CDraggable>() && e->get<CDraggable>().dragging)
         {
             const Vec2 wPos = windowToWorld(m_mousePos);
-            e->get<CTransform>().pos = wPos;
+            e->get<CTransform>().pos = setPosition(wPos); // snap to grid
         }
     }
 }
