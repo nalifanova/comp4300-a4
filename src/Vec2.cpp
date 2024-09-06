@@ -79,12 +79,17 @@ bool Vec2::operator!=(const Vec2& rhs) const
     return x != rhs.x || y != rhs.y;
 }
 
-float Vec2::dist(const Vec2& rhs) const
+float Vec2::distSqr(const Vec2& rhs) const
 {
     const float d_x = abs(x - rhs.x);
     const float d_y = abs(y - rhs.y);
-    const auto distance = sqrtf(d_x * d_x + d_y * d_y);
-    return distance;
+    return d_x * d_x + d_y * d_y;
+}
+
+float Vec2::dist(const Vec2& rhs) const
+{
+    const auto distance = distSqr(rhs);
+    return sqrtf(distance);
 }
 
 float Vec2::cross2d(const Vec2& rhs) const
@@ -97,20 +102,32 @@ float Vec2::length() const
     return std::sqrt(x * x + y * y);
 }
 
-float Vec2::length_squared() const
+float Vec2::lengthSquared() const
 {
     return x * x + y * y;
 }
 
-float Vec2::angle(const Vec2& point) const
+float Vec2::angle(const Vec2& rhs) const
 {
-    return atan2(y - point.y, x - point.x);
+    return atan2(y - rhs.y, x - rhs.x);
 }
 
 Vec2 Vec2::normalize()
 {
-    float l = length();
-    x /= l;
-    y /= l;
+    if (const float l = length(); l != 0.0f && l != 1.0f) {
+        *this /= l;
+    }
     return *this;
+}
+
+Vec2& Vec2::setMagnitude(const float length)
+{
+    normalize();
+    *this *= length;
+    return *this;
+}
+
+const Vec2& Vec2::setMagnitudeA(const float angle, const float length)
+{
+    return {std::cos(angle) * length, std::sin(angle) * length};
 }
