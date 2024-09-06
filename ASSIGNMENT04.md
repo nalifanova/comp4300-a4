@@ -283,7 +283,7 @@ I recommend approaching this assignment in the following order:
    with the correct lifespan (✓)
 6. Implement player attacking / sword collision with NPCs / health / damage (✓)
 7. Implement player animation to correctly animate based on player state (✓)
-8. Implement NPC Patrol behavior
+8. Implement NPC Patrol behavior (✓)
    Implement NPC Follow behavior without vision
 9. Implement Physics::lineIntersect() which will allow you to test whether or
    not two line segments AB and CD intersect, and where they intersect

@@ -581,9 +581,36 @@ void SceneZelda::sMovement()
 
 void SceneZelda::sAI()
 {
-    // TODO: Implement enemy AI
-    // Implement Follow behavior
-    // Implement Patrol behavior
+    for (auto& npc: m_entityManager.getEntities("NPC"))
+    {
+        // Follow behavior
+        // Implement Follow behavior
+
+
+        if (npc->has<CPatrol>()) // Patrol behavior
+        {
+            auto& patrol = npc->get<CPatrol>();
+            auto& transf = npc->get<CTransform>();
+
+            const auto roomPos = getRoomXY(transf.pos);
+            const auto npcTilePos = patrol.positions[patrol.currentPosition];
+            auto npcPos = getPosition(
+                static_cast<int>(roomPos.x), static_cast<int>(roomPos.y),
+                static_cast<int>(npcTilePos.x), static_cast<int>(npcTilePos.y)
+                );
+
+            if (npcPos.dist(transf.pos) < 5.0f) // how smoothly npc changes angle
+            {
+                patrol.currentPosition = (1 + patrol.currentPosition) % patrol.positions.size();
+            }
+            // option 1
+            transf.velocity = (npcPos - transf.pos).setMagnitude(patrol.speed);
+
+            // option 2
+            // auto angle = npcPos.angle(transf.pos);
+            // transf.velocity = Vec2::setMagnitudeA(angle, patrol.speed);
+        }
+    }
 }
 
 void SceneZelda::sStatus()
