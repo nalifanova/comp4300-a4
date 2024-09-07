@@ -581,11 +581,33 @@ void SceneZelda::sMovement()
 
 void SceneZelda::sAI()
 {
+    assert(player() != nullptr);
+
     for (auto& npc: m_entityManager.getEntities("NPC"))
     {
-        // Follow behavior
-        // Implement Follow behavior
+        if (npc->has<CFollowPlayer>())
+        {
+            auto& follow = npc->get<CFollowPlayer>();
+            auto& playerPos = player()->get<CTransform>().pos;
+            auto& npcPos = npc->get<CTransform>().pos;
+            bool invisible = false;
+            // Are there any obstacles between NPC and their target?
+            // Another npc is not an obstacle
+            for (auto& tile: m_entityManager.getEntities("Tile"))
+            {
+                if (tile->get<CBoundingBox>().blockVision
+                    && Physics::entityIntersect(playerPos, npcPos, tile))
+                {
+                    invisible = true;
+                }
+            }
+            // npc follows the target
+            if (!invisible) { npc->get<CTransform>().velocity = playerPos - npcPos; }
+            // npc returns to their initial position
+            else { npc->get<CTransform>().velocity = follow.home - npcPos; }
 
+            npc->get<CTransform>().velocity.setMagnitude(follow.speed);
+        }
 
         if (npc->has<CPatrol>()) // Patrol behavior
         {
@@ -603,12 +625,8 @@ void SceneZelda::sAI()
             {
                 patrol.currentPosition = (1 + patrol.currentPosition) % patrol.positions.size();
             }
-            // option 1
-            transf.velocity = (npcPos - transf.pos).setMagnitude(patrol.speed);
 
-            // option 2
-            // auto angle = npcPos.angle(transf.pos);
-            // transf.velocity = Vec2::setMagnitudeA(angle, patrol.speed);
+            transf.velocity = (npcPos - transf.pos).setMagnitude(patrol.speed);
         }
     }
 }
