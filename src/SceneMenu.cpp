@@ -68,9 +68,8 @@ void SceneMenu::init()
     registerAction(sf::Keyboard::M, "MUTE");
     registerAction(sf::Keyboard::Escape, "QUIT");
 
-    // TODO: don't unmute until the end of development
-    // m_titleMusic = m_game->assets().getSound("STitleTheme");
-    // m_titleMusic.play();
+    m_titleMusic = m_game->assets().getSound("STitleTheme");
+    m_titleMusic.play();
 
     m_title = "Lunatics";
     int titleSize = 30;

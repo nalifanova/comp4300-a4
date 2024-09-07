@@ -253,7 +253,7 @@ NPC Tektite 0 0 15 10 0 0 2 1 Patrol 2 4 15 10 15 7 17 7 17 10
    Example: e->getComponent<CTransform> is now e->get<CTransform>()
 
 3. sf::Sound objects can be played with .play() and stopped with .stop().
-   However in order to play, the Sound object must persist for at least the
+   However, in order to play, the Sound object must persist for at least the
    duration of the sound that you want to be played. If you simply allocate a
    local Sound object and then call sound.play(), it will stop playing as soon
    as the Sound object goes out of scope. Calling sound.play() on a Sound
@@ -284,12 +284,12 @@ I recommend approaching this assignment in the following order:
 6. Implement player attacking / sword collision with NPCs / health / damage (✓)
 7. Implement player animation to correctly animate based on player state (✓)
 8. Implement NPC Patrol behavior (✓)
-   Implement NPC Follow behavior without vision
+   Implement NPC Follow behavior without vision (✓)
 9. Implement Physics::lineIntersect() which will allow you to test whether or
    not two line segments AB and CD intersect, and where they intersect (✓)
 10. Implement Physics::entityIntersect() which will allow you to test whether
     line segment AB intersects with any lines of the bounding box of Entity (✓)
-11. Implement NPC Follow behavior using 10 to check line of sight
+11. Implement NPC Follow behavior using 10 to check line of sight (✓)
 12. Implement invincibility frames (✓) 
 13. Implement heart pickups (✓)
 14. Implement black tile teleporting (✓)
