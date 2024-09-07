@@ -89,6 +89,8 @@ void SceneZelda::update()
 // protected
 void SceneZelda::onEnd()
 {
+    m_zoom = false;
+    sCamera();
     m_game->changeScene("Menu", std::make_shared<SceneMenu>(m_game));
 }
 
@@ -107,6 +109,7 @@ void SceneZelda::sDoAction(const Action& action)
         else if (action.name() == "TOGGLE_TEXTURE") { m_drawTextures = !m_drawTextures; }
         else if (action.name() == "TOGGLE_COLLISION") { m_drawCollision = !m_drawCollision; }
         else if (action.name() == "TOGGLE_GRID") { m_drawGrid = !m_drawGrid; }
+        else if (action.name() == "TOGGLE_ZOOM") { m_zoom = !m_zoom; }
 
         else if (action.name() == "UP") { input.up = true; }
         else if (action.name() == "DOWN") { input.down = true; }
@@ -161,6 +164,8 @@ sf::ConvexShape createPolygon(const float w, const float h)
 void SceneZelda::sRender()
 {
     m_game->window().clear(sf::Color(sf::Color::Black));
+    sf::View view(sf::FloatRect(0, 0, 1280, 768));
+
     // draw room borders
     auto poly = createPolygon(width(), height());
     m_game->window().draw(poly);
@@ -359,6 +364,7 @@ void SceneZelda::init(const std::string& levelPath)
     registerAction(sf::Keyboard::T, "TOGGLE_TEXTURE"); // toggle drawing (T)extures
     registerAction(sf::Keyboard::C, "TOGGLE_COLLISION"); // toggle drawing (C)ollision Box
     registerAction(sf::Keyboard::G, "TOGGLE_GRID"); // toggle drawing (G)rid
+    registerAction(sf::Keyboard::Z, "TOGGLE_ZOOM"); // toggle drawing (G)rid
 
     registerAction(sf::Keyboard::W, "UP");
     registerAction(sf::Keyboard::S, "DOWN");
@@ -736,6 +742,23 @@ void SceneZelda::sCamera()
         Vec2 room = getRoomXY(position);
         view.setCenter(room.x * width() + width() / 2.0f, room.y * height() + height() / 2.0f);
     }
+
+    if (m_zoom)
+    {
+        if (!m_zoomed)
+        {
+            view.zoom(2.0f);
+            m_zoomed = true;
+        }
+    }
+    else
+    {
+        if (m_zoomed)
+        {
+            view.setSize(1280, 760);
+            m_zoomed = false;
+        }
+    }
     m_game->window().setView(view);
 }
 
@@ -761,6 +784,7 @@ void SceneZelda::sGUI()
             ImGui::Checkbox("Draw Textures (T)", &m_drawTextures);
             ImGui::Checkbox("Draw Debug (C)", &m_drawCollision);
             ImGui::Checkbox("Follow Cam (Y)", &m_follow);
+            ImGui::Checkbox("Zoom Cam (Z)", &m_zoom);
 
             ImGui::EndTabItem();
         }
