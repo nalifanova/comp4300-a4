@@ -49,15 +49,37 @@ bool Physics::isInside(const Vec2& pos, const std::shared_ptr<Entity>& entity)
 
 Intersect Physics::lineIntersect(const Vec2& a, const Vec2& b, const Vec2& c, const Vec2& d)
 {
-    // Student TODO
-    return {false, Vec2(0, 0)};
+    const Vec2 r = b - a;
+    const Vec2 s = d - c;
+    const float rxs = r.cross2d(s); // 2d cross product
+    const Vec2 cma = c - a;
+    const float t = cma.cross2d(s) / rxs; // scalar value for s
+    const float u = cma.cross2d(r) / rxs; // scalar value for r
+
+    if (t >= 0 && t <= 1 && u >= 0 && u <= 1)
+        return {true, a + r * t};
+
+    return {false, Vec2(0.0f, 0.0f)};
 }
 
 bool Physics::entityIntersect(const Vec2& a, const Vec2& b, const std::shared_ptr<Entity>& entity)
 {
-    // You have to check if line a-b intersects with each life of a BBox of the entity
-    // Student TODO
-    return false;
+    // Position is a center point of an entity thus we should find position of each vertex
+    // Then we have to check if line a-b intersects with each life of a BBox of the entity
+    const auto& halfSize = entity->get<CBoundingBox>().halfSize;
+    const auto& pos = entity->get<CTransform>().pos;
+
+    Vec2 topLeft(pos.x - halfSize.x, pos.y - halfSize.y);
+    Vec2 topRight(pos.x + halfSize.x, pos.y - halfSize.y);
+    Vec2 bottomLeft(pos.x - halfSize.x, pos.y + halfSize.y);
+    Vec2 bottomRight(pos.x + halfSize.x, pos.y + halfSize.y);
+
+    bool intersects = lineIntersect(a, b, topLeft, topRight).intersect;
+    intersects = intersects || lineIntersect(a, b, topRight, bottomRight).intersect;
+    intersects = intersects || lineIntersect(a, b, bottomRight, bottomLeft).intersect;
+    intersects = intersects || lineIntersect(a, b, bottomLeft, topLeft).intersect;
+
+    return intersects;
 }
 
 sf::Vector2f Physics::getRandomOffset(float size)
