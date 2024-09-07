@@ -34,7 +34,7 @@ void SceneZelda::guiShowTable(const std::vector<std::shared_ptr<Entity>>& entiti
             ImGui::TableNextRow(0, 32.0f);
 
             ImGui::TableSetColumnIndex(0);
-            if (ImGui::Button("[x]"))
+            if (ImGui::Button(("[x]##%" + std::to_string(e->id())).c_str()))
             {
                 e->destroy();
                 if (e->tag() == "Player") { spawnPlayer(); }
@@ -420,8 +420,8 @@ Vec2 SceneZelda::getPosition(const int rx, const int ry, const int tx, const int
     const auto tileY = static_cast<float>(ty);
 
     return {
-        roomX * width() + tileX * m_gridSize.x - m_gridSize.x / 2.0f
-      , roomY * height() + tileY * m_gridSize.y - m_gridSize.y / 2.0f,
+        roomX * width() + tileX * m_gridSize.x + m_gridSize.x / 2.0f
+      , roomY * height() + tileY * m_gridSize.y + m_gridSize.y / 2.0f,
     };
 }
 
@@ -864,16 +864,19 @@ void SceneZelda::collisionEntities(std::shared_ptr<Entity>& entity, std::shared_
     const auto overlap = Physics::getOverlap(entity, tile);
     if (overlap.x > 0.0f && overlap.y > 0.0f)
     {
-        // Overlap: defining a direction
-        const auto prevOverlap = Physics::getPreviousOverlap(entity, tile);
-        auto& entityPos = entity->get<CTransform>().pos;
-        auto& tilePos = tile->get<CTransform>().pos;
+        if (tile->get<CBoundingBox>().blockMove)
+        {
+            // Overlap: defining a direction
+            const auto prevOverlap = Physics::getPreviousOverlap(entity, tile);
+            auto& entityPos = entity->get<CTransform>().pos;
+            auto& tilePos = tile->get<CTransform>().pos;
 
-        // top/bottom collision
-        if (prevOverlap.x > 0.0f) { entityPos.y += entityPos.y < tilePos.y ? -overlap.y : overlap.y; }
+            // top/bottom collision
+            if (prevOverlap.x > 0.0f) { entityPos.y += entityPos.y < tilePos.y ? -overlap.y : overlap.y; }
 
-        // side collision
-        if (prevOverlap.y > 0.0f) { entityPos.x += entityPos.x < tilePos.x ? -overlap.x : overlap.x; }
+            // side collision
+            if (prevOverlap.y > 0.0f) { entityPos.x += entityPos.x < tilePos.x ? -overlap.x : overlap.x; }
+        }
     }
 }
 
