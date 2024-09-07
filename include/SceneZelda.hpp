@@ -65,6 +65,8 @@ protected:
     bool m_drawGrid = false;
     bool m_drawTextures = true;
     bool m_follow = false;
+    bool m_zoom = false;
+    bool m_zoomed = false;
 
     bool m_isDragging = false;
 };
