@@ -139,9 +139,32 @@ void SceneZelda::sDoAction(const Action& action)
     }
 }
 
+sf::ConvexShape createPolygon(const float w, const float h)
+{
+    std::vector<Vec2> points = {
+        {0, -h}, {w, -h}, {w, 0}, {2 * w, 0},
+        {2 * w, h}, {w, h}, {w, 2 * h}, {0, 2 * h},
+        {0, h}, {-w, h}, {-w, 0}, {0, 0}
+    };
+    sf::ConvexShape polygon;
+    polygon.setPointCount(points.size());
+    polygon.setFillColor(sf::Color(255, 192, 122, 255));
+    polygon.setOutlineColor(sf::Color::Black);
+    polygon.setOutlineThickness(1.0f);
+    for (size_t i = 0; i < points.size(); i++)
+    {
+        polygon.setPoint(i, sf::Vector2f(points[i].x, points[i].y));
+    }
+    return polygon;
+}
+
 void SceneZelda::sRender()
 {
-    m_game->window().clear(sf::Color(255, 192, 122));
+    m_game->window().clear(sf::Color(sf::Color::Black));
+    // draw room borders
+    auto poly = createPolygon(width(), height());
+    m_game->window().draw(poly);
+
     sf::RectangleShape tick({1.0f, 6.0f});
     tick.setFillColor(sf::Color::Black);
 
@@ -294,6 +317,7 @@ void SceneZelda::sRender()
             m_gridText.setFillColor(sf::Color::Red);
             m_game->window().draw(m_gridText);
         }
+        m_gridText.setFillColor(sf::Color::White);
 
         for (float x = nextGridX; x < rightX; x += m_gridSize.x)
         {
@@ -432,8 +456,7 @@ Vec2 SceneZelda::setPosition(const Vec2& vec) const
     const float tileY = std::round((vec.y - m_gridSize.y / 2.0f) / m_gridSize.y);
 
     return {
-        tileX * m_gridSize.x + m_gridSize.x / 2.0f,
-        tileY * m_gridSize.y + m_gridSize.y / 2.0f,
+        tileX * m_gridSize.x + m_gridSize.x / 2.0f, tileY * m_gridSize.y + m_gridSize.y / 2.0f,
     };
 }
 
@@ -886,10 +909,12 @@ void SceneZelda::entityTileCollision()
     for (auto& tile: m_entityManager.getEntities("Tile"))
     {
         collisionEntities(mPlayer, tile);
+        roomCollision(mPlayer);
 
         for (auto& npc: m_entityManager.getEntities("NPC"))
         {
             collisionEntities(npc, tile);
+            roomCollision(npc);
         }
     }
 }
@@ -907,7 +932,7 @@ void SceneZelda::playerNpcCollision()
             mPlayer->get<CHealth>().current -= npc->get<CDamage>().damage;
             mPlayer->add<CInvincibility>(60);
             // Debug msg
-            std::cout << "Damage of " << npc->get<CAnimation>().animation.getName() << " is "
+            std::cout << "Damage from " << npc->get<CAnimation>().animation.getName() << " is "
                 << npc->get<CDamage>().damage << "\n";
 
             if (mPlayer->get<CHealth>().current <= 0)
@@ -1010,6 +1035,42 @@ void SceneZelda::blackTileCollision()
         sf::Vector2f pos2f(randomPos.x, randomPos.y);
         while (isPositionOccupied(pos2f)) { pos2f = pos2f + Physics::getRandomOffset(m_gridSize.x); }
         playerPos = Vec2(pos2f.x, pos2f.y);
+    }
+}
+
+void SceneZelda::roomCollision(std::shared_ptr<Entity>& entity)
+{
+    auto& pos = entity->get<CTransform>().pos;
+    const auto halfSize = entity->get<CBoundingBox>().halfSize;
+    const auto room = getRoomXY(pos);
+    const Vec2 leftRoom(-1, 0);
+    const Vec2 topRoom(0, -1);
+    const Vec2 rightRoom(1, 0);
+    const Vec2 bottomRoom(0, 1);
+
+    if (room == leftRoom)
+    {
+        if (pos.x < halfSize.x - width()) { pos.x = halfSize.x - width(); }
+        if (pos.y > height() - halfSize.y) { pos.y = height() - halfSize.y; }
+        if (pos.y < halfSize.y) { pos.y = halfSize.y; }
+    }
+    else if (room == topRoom)
+    {
+        if (pos.x < halfSize.x) { pos.x = halfSize.x; }
+        if (pos.x > width() - halfSize.x) { pos.x = width() - halfSize.x; }
+        if (pos.y < halfSize.y - height()) { pos.y = halfSize.y - height(); }
+    }
+    else if (room == rightRoom)
+    {
+        if (pos.x > 2 * width() - halfSize.x) { pos.x = 2 * width() - halfSize.x; }
+        if (pos.y > height() - halfSize.y) { pos.y = height() - halfSize.y; }
+        if (pos.y < halfSize.y) { pos.y = halfSize.y; }
+    }
+    else if (room == bottomRoom)
+    {
+        if (pos.x < halfSize.x) { pos.x = halfSize.x; }
+        if (pos.x > width() - halfSize.x) { pos.x = width() - halfSize.x; }
+        if (pos.y > 2 * height() - halfSize.y) { pos.y = 2 * height() - halfSize.y; }
     }
 }
 

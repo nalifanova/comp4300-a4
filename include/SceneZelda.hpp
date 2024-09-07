@@ -48,6 +48,7 @@ protected:
     void swordNpcCollision();
     void entityHeartCollision();
     void blackTileCollision();
+    void roomCollision(std::shared_ptr<Entity>& entity);
 
     void stateAnimation(std::string& animName, const std::shared_ptr<Entity>& entity) const;
     bool isPositionOccupied(const sf::Vector2f& position);
