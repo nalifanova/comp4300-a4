@@ -291,6 +291,7 @@ void SceneZelda::sRender()
                 leftX + m_gridSize.x + 3,
                 topY + m_gridSize.y / 2
                 );
+            m_gridText.setFillColor(sf::Color::Red);
             m_game->window().draw(m_gridText);
         }
 
@@ -427,7 +428,6 @@ Vec2 SceneZelda::getPosition(const int rx, const int ry, const int tx, const int
 
 Vec2 SceneZelda::setPosition(const Vec2& vec) const
 {
-    // TODO: make it to include room also
     const float tileX = std::round((vec.x - m_gridSize.x / 2.0f) / m_gridSize.x);
     const float tileY = std::round((vec.y - m_gridSize.y / 2.0f) / m_gridSize.y);
 
@@ -842,10 +842,10 @@ void SceneZelda::sGUI()
 
 Vec2 SceneZelda::windowToWorld(const Vec2& mousePosition) const
 {
-    // For a non-moving up/down window this solution is okay
     auto view = m_game->window().getView();
-    float wx = view.getCenter().x - (m_game->window().getSize().x / 2.0f);
-    return {mousePosition.x + wx, mousePosition.y};
+    float wx = view.getCenter().x - width() / 2.0f;
+    float wy = view.getCenter().y - height() / 2.0f;
+    return {mousePosition.x + wx, mousePosition.y + wy};
 }
 
 Vec2 SceneZelda::getRoomXY(const Vec2& pos) const
