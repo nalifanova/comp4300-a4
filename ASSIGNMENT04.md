@@ -286,9 +286,9 @@ I recommend approaching this assignment in the following order:
 8. Implement NPC Patrol behavior (✓)
    Implement NPC Follow behavior without vision
 9. Implement Physics::lineIntersect() which will allow you to test whether or
-   not two line segments AB and CD intersect, and where they intersect
+   not two line segments AB and CD intersect, and where they intersect (✓)
 10. Implement Physics::entityIntersect() which will allow you to test whether
-    line segment AB intersects with any lines of the bounding box of Entity
+    line segment AB intersects with any lines of the bounding box of Entity (✓)
 11. Implement NPC Follow behavior using 10 to check line of sight
 12. Implement invincibility frames (✓) 
 13. Implement heart pickups (✓)
