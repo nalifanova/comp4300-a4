@@ -60,3 +60,12 @@ run the script
 ```bash
 chmod +x PlayGame.sh && ./PlayGame.sh
 ```
+
+### My Thoughts
+I absolutely loved this assignment 🤓. The hilarious NPCs either following you or patrolling 
+the area never fail to make me laugh. I know the AI is simple, but getting it to work is 
+incredibly satisfying! And the fun really kicks in when you start "cheating" by adding extra 
+hearts or tiles to hide from the NPCs—it makes the gameplay even more enjoyable.
+
+Overall, it was an awesome experience. Big thanks to Dave Churchill for his fantastic course!
+
