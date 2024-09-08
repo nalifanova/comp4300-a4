@@ -26,8 +26,11 @@ For more information about assignment itself, please read the
 [ASSIGNMENT.md](ASSIGNMENT04.md) file.
 
 Zoomed in
+
 ![Not Zelda](assets/snapshots/zelda.png)
+
 Zoomed out
+
 ![Not Zelda](assets/snapshots/zelda2.png)
 
 ## Dev Notes
