@@ -25,6 +25,14 @@ for providing the initial code for Assignment 04 otherwise I wouldn't have anyth
 For more information about assignment itself, please read the
 [ASSIGNMENT.md](ASSIGNMENT04.md) file.
 
+Zoomed in
+
+![Not Zelda](assets/snapshots/zelda.png)
+
+Zoomed out
+
+![Not Zelda](assets/snapshots/zelda2.png)
+
 ## Dev Notes
 I'm using CLion as my IDE, and I try to follow a guideline from
 [CLion:](https://www.jetbrains.com/help/clion/clangformat-as-alternative-formatter.html)
